@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Administrare Muncitori</h2>
+
+<form method="POST" class="row g-3 mb-4">
+    <div class="col-md-5">
+        <input type="text" name="nume" class="form-control" placeholder="Nume muncitor">
+    </div>
+    <div class="col-md-3">
+        <input type="number" step="0.1" name="tarif" class="form-control" placeholder="Tarif/oră">
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-success">Adaugă</button>
+    </div>
+</form>
+
+<table class="table table-bordered">
+    <tr>
+        <th>Nume</th>
+        <th>Tarif/oră</th>
+        <th>Acțiuni</th>
+    </tr>
+    {% for m in muncitori %}
+    <tr>
+        <td>{{ m.nume }}</td>
+        <td>{{ m.tarif_ora }} lei</td>
+        <td>
+            <a href="{{ url_for('sterge_muncitor', id=m.id) }}"
+               class="btn btn-danger btn-sm"
+               onclick="return confirm('Sigur ștergi acest muncitor?')">
+               Șterge
+            </a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
