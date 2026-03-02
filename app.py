@@ -25,9 +25,6 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
 
-with app.app_context():
-    db.create_all()
-
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
@@ -44,6 +41,22 @@ def calc_ore(start, stop):
     if t2 < t1:
         t2 += timedelta(days=1)
     return round((t2 - t1).total_seconds() / 3600, 2)
+
+@app.route("/create-admin")
+def create_admin():
+    from werkzeug.security import generate_password_hash
+
+    if not User.query.filter_by(username="admin").first():
+        admin = User(
+            username="admin",
+            password=generate_password_hash("admin123"),
+            role="admin"
+        )
+        db.session.add(admin)
+        db.session.commit()
+        return "Admin creat"
+
+    return "Admin exista deja"
 
 @app.route("/admin")
 @login_required
