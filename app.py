@@ -50,7 +50,7 @@ def admin():
 
 @app.route("/")
 def home():
-    return redirect(url_for("login"))
+    return "SmartPontaj Running"
 
 
 @app.route("/login", methods=["GET", "POST"])
