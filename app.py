@@ -107,7 +107,7 @@ def sterge_muncitor(id):
     db.session.commit()
     return redirect(url_for("muncitori"))
 
-@app.route("/raport_lunar")
+@@app.route("/raport_lunar")
 @login_required
 def raport_lunar():
 
@@ -115,17 +115,17 @@ def raport_lunar():
     if not luna:
         luna = datetime.now().strftime("%Y-%m")
 
-   rezultate = db.session.query(
-    Muncitor.nume,
-    db.func.sum(Pontaj.ore),
-    db.func.sum(Pontaj.plata)
-).join(
-    Pontaj, Pontaj.muncitor_id == Muncitor.id
-).filter(
-    Pontaj.data.like(f"{luna}%")
-).group_by(
-    Muncitor.nume
-).all()
+    rezultate = db.session.query(
+        Muncitor.nume,
+        db.func.sum(Pontaj.ore),
+        db.func.sum(Pontaj.plata)
+    ).join(
+        Pontaj, Pontaj.muncitor_id == Muncitor.id
+    ).filter(
+        Pontaj.data.like(f"{luna}%")
+    ).group_by(
+        Muncitor.nume
+    ).all()
 
     return render_template(
         "raport_lunar.html",
