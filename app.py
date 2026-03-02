@@ -42,21 +42,6 @@ def calc_ore(start, stop):
         t2 += timedelta(days=1)
     return round((t2 - t1).total_seconds() / 3600, 2)
 
-@app.route("/create-admin")
-def create_admin():
-    from werkzeug.security import generate_password_hash
-
-    if not User.query.filter_by(username="admin").first():
-        admin = User(
-            username="admin",
-            password=generate_password_hash("admin123"),
-            role="admin"
-        )
-        db.session.add(admin)
-        db.session.commit()
-        return "Admin creat"
-
-    return "Admin exista deja"
 
 @app.route("/admin")
 @login_required
