@@ -107,7 +107,7 @@ def sterge_muncitor(id):
     db.session.commit()
     return redirect(url_for("muncitori"))
 
-@@app.route("/raport_lunar")
+@app.route("/raport_lunar")
 @login_required
 def raport_lunar():
 
