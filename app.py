@@ -120,7 +120,7 @@ def raport_lunar():
         db.func.sum(Pontaj.ore),
         db.func.sum(Pontaj.plata)
     ).join(Pontaj).filter(
-        Pontaj.data.startswith(luna)
+        Pontaj.data.like(f"{luna}%")
     ).group_by(Muncitor.nume).all()
 
     return render_template(
