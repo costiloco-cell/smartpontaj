@@ -7,9 +7,6 @@ from flask_login import current_user
 from models import db, User, Muncitor, Pontaj
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 
