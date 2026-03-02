@@ -78,16 +78,16 @@ def login():
 def dashboard():
 
     luna = request.args.get("luna")
-    muncitor_id = request.args.get("muncitor")
+    muncitor_id = request.args.get("muncitor", type=int)
 
     if not luna:
         luna = datetime.now().strftime("%Y-%m")
 
     query = db.session.query(
-        Pontaj.data,
-        db.func.sum(Pontaj.ore),
-        db.func.sum(Pontaj.plata)
-    )
+    Pontaj.data,
+    db.func.coalesce(db.func.sum(Pontaj.ore), 0),
+    db.func.coalesce(db.func.sum(Pontaj.plata), 0)
+)
 
     if muncitor_id:
         query = query.filter(Pontaj.muncitor_id == int(muncitor_id))
