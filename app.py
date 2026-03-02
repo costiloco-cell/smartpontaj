@@ -219,12 +219,13 @@ import io
 def export_lunar():
 
     luna = request.args.get("luna")
+
     rezultate = db.session.query(
         Muncitor.nume,
         db.func.sum(Pontaj.ore),
         db.func.sum(Pontaj.plata)
     ).join(Pontaj).filter(
-        Pontaj.data.startswith(luna)
+        Pontaj.data.like(f"{luna}%")
     ).group_by(Muncitor.nume).all()
 
     wb = Workbook()
