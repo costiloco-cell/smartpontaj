@@ -7,6 +7,12 @@ from flask_login import current_user
 from models import db, User, Muncitor, Pontaj
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import Table
+import io
 
 app = Flask(__name__)
 
@@ -70,13 +76,49 @@ def login():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    total_ore = db.session.query(db.func.sum(Pontaj.ore)).scalar() or 0
-    total_plata = db.session.query(db.func.sum(Pontaj.plata)).scalar() or 0
+
+    luna = request.args.get("luna")
+    muncitor_id = request.args.get("muncitor")
+
+    if not luna:
+        luna = datetime.now().strftime("%Y-%m")
+
+    query = db.session.query(
+        Pontaj.data,
+        db.func.sum(Pontaj.ore),
+        db.func.sum(Pontaj.plata)
+    )
+
+    if muncitor_id:
+        query = query.filter(Pontaj.muncitor_id == int(muncitor_id))
+
+    date_luna = query.filter(
+        Pontaj.data.like(f"{luna}%")
+    ).group_by(
+        Pontaj.data
+    ).order_by(
+        Pontaj.data
+    ).all()
+
+    zile = [d[0][-2:] for d in date_luna]
+    ore_pe_zi = [float(d[1] or 0) for d in date_luna]
+    plata_pe_zi = [float(d[2] or 0) for d in date_luna]
+
+    total_ore = sum(ore_pe_zi)
+    total_plata = sum(plata_pe_zi)
+
+    muncitori = Muncitor.query.all()
 
     return render_template(
         "dashboard.html",
         total_ore=total_ore,
-        total_plata=total_plata
+        total_plata=total_plata,
+        zile=zile,
+        ore_pe_zi=ore_pe_zi,
+        plata_pe_zi=plata_pe_zi,
+        luna=luna,
+        muncitori=muncitori,
+        muncitor_selectat=muncitor_id
     )
 
 @app.route("/muncitori", methods=["GET", "POST"])
@@ -209,6 +251,58 @@ def pontaj():
         pontaje=pontaje_existente,
         total_ore_zi=total_ore_zi,
         total_plata_zi=total_plata_zi
+    )
+
+@app.route("/fluturas")
+@login_required
+def fluturas():
+
+    luna = request.args.get("luna")
+    muncitor_id = request.args.get("muncitor")
+
+    if not muncitor_id:
+        return "Selectează un angajat."
+
+    muncitor = Muncitor.query.get(int(muncitor_id))
+
+    date_luna = db.session.query(
+        db.func.sum(Pontaj.ore),
+        db.func.sum(Pontaj.plata)
+    ).filter(
+        Pontaj.muncitor_id == muncitor.id,
+        Pontaj.data.like(f"{luna}%")
+    ).first()
+
+    total_ore = float(date_luna[0] or 0)
+    total_plata = float(date_luna[1] or 0)
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+
+    styles = getSampleStyleSheet()
+
+    elements.append(Paragraph(f"Fluturaș salariu - {luna}", styles["Title"]))
+    elements.append(Spacer(1, 20))
+
+    data = [
+        ["Angajat", muncitor.nume],
+        ["Total ore", f"{total_ore}"],
+        ["Total plată", f"{total_plata} lei"]
+    ]
+
+    table = Table(data)
+    elements.append(table)
+
+    doc.build(elements)
+
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"fluturas_{muncitor.nume}_{luna}.pdf",
+        mimetype="application/pdf"
     )
 
 from openpyxl import Workbook

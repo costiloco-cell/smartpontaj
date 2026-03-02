@@ -5,3 +5,4 @@ Flask-Login
 Flask-SQLAlchemy
 openpyxl
 Werkzeug
+reportlab
