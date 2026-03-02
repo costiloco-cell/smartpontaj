@@ -115,13 +115,17 @@ def raport_lunar():
     if not luna:
         luna = datetime.now().strftime("%Y-%m")
 
-    rezultate = db.session.query(
-        Muncitor.nume,
-        db.func.sum(Pontaj.ore),
-        db.func.sum(Pontaj.plata)
-    ).join(Pontaj).filter(
-        Pontaj.data.like(f"{luna}%")
-    ).group_by(Muncitor.nume).all()
+   rezultate = db.session.query(
+    Muncitor.nume,
+    db.func.sum(Pontaj.ore),
+    db.func.sum(Pontaj.plata)
+).join(
+    Pontaj, Pontaj.muncitor_id == Muncitor.id
+).filter(
+    Pontaj.data.like(f"{luna}%")
+).group_by(
+    Muncitor.nume
+).all()
 
     return render_template(
         "raport_lunar.html",
@@ -221,12 +225,16 @@ def export_lunar():
     luna = request.args.get("luna")
 
     rezultate = db.session.query(
-        Muncitor.nume,
-        db.func.sum(Pontaj.ore),
-        db.func.sum(Pontaj.plata)
-    ).join(Pontaj).filter(
-        Pontaj.data.like(f"{luna}%")
-    ).group_by(Muncitor.nume).all()
+    Muncitor.nume,
+    db.func.sum(Pontaj.ore),
+    db.func.sum(Pontaj.plata)
+).join(
+    Pontaj, Pontaj.muncitor_id == Muncitor.id
+).filter(
+    Pontaj.data.like(f"{luna}%")
+).group_by(
+    Muncitor.nume
+).all()
 
     wb = Workbook()
     ws = wb.active
