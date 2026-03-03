@@ -26,6 +26,15 @@ db.init_app(app)
 
 with app.app_context():
     db.create_all()
+
+    if not User.query.filter_by(username="admin").first():
+        admin = User(
+            username="admin",
+            password=generate_password_hash("admin123"),
+            role="admin"
+        )
+        db.session.add(admin)
+        db.session.commit()
     
 login_manager = LoginManager()
 login_manager.init_app(app)
