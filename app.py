@@ -1,25 +1,21 @@
 print("APP REAL INCARCAT")
 
 import os
-from flask import Flask, render_template, redirect, request, url_for
-from flask_login import LoginManager, login_user, login_required, logout_user
-from flask_login import current_user
+import io
+from flask import Flask, render_template, redirect, request, url_for, send_file
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from models import db, User, Muncitor, Pontaj
 from datetime import datetime, timedelta
-from werkzeug.security import generate_password_hash
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from werkzeug.security import generate_password_hash, check_password_hash
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.platypus import Table
-import io
 
 app = Flask(__name__)
 
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "fallback_secret")
 
 database_url = os.environ.get("DATABASE_URL")
-
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
@@ -28,31 +24,22 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
 
+with app.app_context():
+    db.create_all()
+    
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
 
+# =====================================================
+# LOGIN
+# =====================================================
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-
-def calc_ore(start, stop):
-    t1 = datetime.strptime(start, "%H:%M")
-    t2 = datetime.strptime(stop, "%H:%M")
-    if t2 < t1:
-        t2 += timedelta(days=1)
-    return round((t2 - t1).total_seconds() / 3600, 2)
-
-
-@app.route("/admin")
-@login_required
-def admin():
-    if current_user.role != "admin":
-        return "Acces interzis", 403
-
-    return render_template("admin.html")
 
 @app.route("/")
 def home():
@@ -64,14 +51,23 @@ def login():
     if request.method == "POST":
         user = User.query.filter_by(username=request.form["username"]).first()
 
-        from werkzeug.security import check_password_hash
-
         if user and check_password_hash(user.password, request.form["password"]):
             login_user(user)
             return redirect(url_for("dashboard"))
 
     return render_template("login.html")
 
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
+
+
+# =====================================================
+# DASHBOARD CU COMPARARE LUNI
+# =====================================================
 
 @app.route("/dashboard")
 @login_required
@@ -83,36 +79,65 @@ def dashboard():
     if not luna:
         luna = datetime.now().strftime("%Y-%m")
 
+    def total_luna(luna_target):
+        q = db.session.query(
+            db.func.coalesce(db.func.sum(Pontaj.ore), 0),
+            db.func.coalesce(db.func.sum(Pontaj.plata), 0)
+        ).filter(Pontaj.data.like(f"{luna_target}%"))
+
+        if muncitor_id:
+            q = q.filter(Pontaj.muncitor_id == muncitor_id)
+
+        return q.first()
+
+    total_curent = total_luna(luna)
+
+    data_curenta = datetime.strptime(luna, "%Y-%m")
+    luna_anterioara = (data_curenta - timedelta(days=1)).strftime("%Y-%m")
+
+    total_anterior = total_luna(luna_anterioara)
+
+    ore_curent = float(total_curent[0])
+    plata_curent = float(total_curent[1])
+
+    ore_anterior = float(total_anterior[0])
+    plata_anterior = float(total_anterior[1])
+
+    diferenta_proc = 0
+    if ore_anterior > 0:
+        diferenta_proc = round(
+            ((ore_curent - ore_anterior) / ore_anterior) * 100, 2
+        )
+
+    # ===== GRAFIC PE ZILE =====
     query = db.session.query(
-    Pontaj.data,
-    db.func.coalesce(db.func.sum(Pontaj.ore), 0),
-    db.func.coalesce(db.func.sum(Pontaj.plata), 0)
-)
+        Pontaj.data,
+        db.func.coalesce(db.func.sum(Pontaj.ore), 0),
+        db.func.coalesce(db.func.sum(Pontaj.plata), 0)
+    ).filter(Pontaj.data.like(f"{luna}%"))
 
     if muncitor_id:
-        query = query.filter(Pontaj.muncitor_id == int(muncitor_id))
+        query = query.filter(Pontaj.muncitor_id == muncitor_id)
 
-    date_luna = query.filter(
-        Pontaj.data.like(f"{luna}%")
-    ).group_by(
+    date_luna = query.group_by(
         Pontaj.data
     ).order_by(
         Pontaj.data
     ).all()
 
     zile = [d[0][-2:] for d in date_luna]
-    ore_pe_zi = [float(d[1] or 0) for d in date_luna]
-    plata_pe_zi = [float(d[2] or 0) for d in date_luna]
-
-    total_ore = sum(ore_pe_zi)
-    total_plata = sum(plata_pe_zi)
+    ore_pe_zi = [float(d[1]) for d in date_luna]
+    plata_pe_zi = [float(d[2]) for d in date_luna]
 
     muncitori = Muncitor.query.all()
 
     return render_template(
         "dashboard.html",
-        total_ore=total_ore,
-        total_plata=total_plata,
+        total_ore=ore_curent,
+        total_plata=plata_curent,
+        ore_anterior=ore_anterior,
+        plata_anterior=plata_anterior,
+        diferenta_proc=diferenta_proc,
         zile=zile,
         ore_pe_zi=ore_pe_zi,
         plata_pe_zi=plata_pe_zi,
@@ -121,62 +146,10 @@ def dashboard():
         muncitor_selectat=muncitor_id
     )
 
-@app.route("/muncitori", methods=["GET", "POST"])
-@login_required
-def muncitori():
 
-    if request.method == "POST":
-        nume = request.form.get("nume")
-        tarif = request.form.get("tarif")
-
-        if nume and tarif:
-            m = Muncitor(nume=nume, tarif_ora=float(tarif))
-            db.session.add(m)
-            db.session.commit()
-            return redirect(url_for("muncitori"))
-
-    lista = Muncitor.query.all()
-    return render_template("muncitori.html", muncitori=lista)
-
-@app.route("/sterge_muncitor/<int:id>")
-@login_required
-def sterge_muncitor(id):
-    m = Muncitor.query.get_or_404(id)
-    db.session.delete(m)
-    db.session.commit()
-    return redirect(url_for("muncitori"))
-
-@app.route("/raport_lunar")
-@login_required
-def raport_lunar():
-
-    luna = request.args.get("luna")
-    if not luna:
-        luna = datetime.now().strftime("%Y-%m")
-
-    rezultate = db.session.query(
-        Muncitor.nume,
-        db.func.sum(Pontaj.ore),
-        db.func.sum(Pontaj.plata)
-    ).join(
-        Pontaj, Pontaj.muncitor_id == Muncitor.id
-    ).filter(
-        Pontaj.data.like(f"{luna}%")
-    ).group_by(
-        Muncitor.nume
-    ).all()
-
-    return render_template(
-        "raport_lunar.html",
-        rezultate=rezultate,
-        luna=luna
-    )
-
-@app.route("/logout")
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for("login"))
+# =====================================================
+# PONTAJ 24H + OBSERVATII
+# =====================================================
 
 @app.route("/pontaj", methods=["GET", "POST"])
 @login_required
@@ -186,7 +159,6 @@ def pontaj():
     if not data_selectata:
         data_selectata = datetime.now().strftime("%Y-%m-%d")
 
-    # Navigare zi
     action = request.args.get("action")
     if action == "prev":
         data_selectata = (
@@ -204,43 +176,80 @@ def pontaj():
         for p in Pontaj.query.filter_by(data=data_selectata).all()
     }
 
+    def calc_interval(start, stop):
+        if not start or not stop:
+            return 0
+        t1 = datetime.strptime(start, "%H:%M")
+        t2 = datetime.strptime(stop, "%H:%M")
+        if t2 < t1:
+            t2 += timedelta(days=1)
+        return (t2 - t1).total_seconds() / 3600
+
     if request.method == "POST":
+
         for m in muncitori:
-            start = request.form.get(f"start_{m.id}")
-            stop = request.form.get(f"stop_{m.id}")
 
-            if start and stop:
-                t1 = datetime.strptime(start, "%H:%M")
-                t2 = datetime.strptime(stop, "%H:%M")
+            start1 = request.form.get(f"start1_{m.id}")
+            stop1 = request.form.get(f"stop1_{m.id}")
+            start2 = request.form.get(f"start2_{m.id}")
+            stop2 = request.form.get(f"stop2_{m.id}")
+            tip_zi = request.form.get(f"tip_{m.id}")
+            observatii = request.form.get(f"obs_{m.id}")
 
-                if t2 < t1:
-                    t2 += timedelta(days=1)
+            ore1 = calc_interval(start1, stop1)
+            ore2 = calc_interval(start2, stop2)
 
-                ore = round((t2 - t1).total_seconds() / 3600, 2)
-                plata = ore * m.tarif_ora
+            total_ore = ore1 + ore2
 
-                existent = pontaje_existente.get(m.id)
+            if tip_zi in ["Concediu", "Boala"]:
+                total_ore = 8
+            elif tip_zi == "Liber":
+                total_ore = 0
 
-                if existent:
-                    existent.start = start
-                    existent.stop = stop
-                    existent.ore = ore
-                    existent.plata = plata
-                else:
-                    nou = Pontaj(
-                        data=data_selectata,
-                        muncitor_id=m.id,
-                        start=start,
-                        stop=stop,
-                        ore=ore,
-                        plata=plata
-                    )
-                    db.session.add(nou)
+            ore_normale = min(total_ore, 8)
+            ore_suplimentare = max(total_ore - 8, 0)
+
+            plata = (
+                ore_normale * m.tarif_ora +
+                ore_suplimentare * m.tarif_ora * 1.5
+            )
+
+            if total_ore > 12:
+                observatii = (observatii or "") + " ⚠ Peste 12h"
+
+            existent = pontaje_existente.get(m.id)
+
+            if existent:
+                existent.start1 = start1
+                existent.stop1 = stop1
+                existent.start2 = start2
+                existent.stop2 = stop2
+                existent.tip_zi = tip_zi
+                existent.ore = total_ore
+                existent.ore_normale = ore_normale
+                existent.ore_suplimentare = ore_suplimentare
+                existent.plata = plata
+                existent.observatii = observatii
+            else:
+                nou = Pontaj(
+                    data=data_selectata,
+                    muncitor_id=m.id,
+                    start1=start1,
+                    stop1=stop1,
+                    start2=start2,
+                    stop2=stop2,
+                    tip_zi=tip_zi,
+                    ore=total_ore,
+                    ore_normale=ore_normale,
+                    ore_suplimentare=ore_suplimentare,
+                    plata=plata,
+                    observatii=observatii
+                )
+                db.session.add(nou)
 
         db.session.commit()
         return redirect(url_for("pontaj", data=data_selectata))
 
-    # TOTALURI (în interiorul funcției, dar în afara blocului POST)
     total_ore_zi = sum(p.ore for p in pontaje_existente.values())
     total_plata_zi = sum(p.plata for p in pontaje_existente.values())
 
@@ -253,33 +262,37 @@ def pontaj():
         total_plata_zi=total_plata_zi
     )
 
+
+# =====================================================
+# FLUTURAS SALARIU
+# =====================================================
+
 @app.route("/fluturas")
 @login_required
 def fluturas():
 
     luna = request.args.get("luna")
-    muncitor_id = request.args.get("muncitor")
+    muncitor_id = request.args.get("muncitor", type=int)
 
     if not muncitor_id:
         return "Selectează un angajat."
 
-    muncitor = Muncitor.query.get(int(muncitor_id))
+    muncitor = Muncitor.query.get(muncitor_id)
 
     date_luna = db.session.query(
-        db.func.sum(Pontaj.ore),
-        db.func.sum(Pontaj.plata)
+        db.func.coalesce(db.func.sum(Pontaj.ore), 0),
+        db.func.coalesce(db.func.sum(Pontaj.plata), 0)
     ).filter(
         Pontaj.muncitor_id == muncitor.id,
         Pontaj.data.like(f"{luna}%")
     ).first()
 
-    total_ore = float(date_luna[0] or 0)
-    total_plata = float(date_luna[1] or 0)
+    total_ore = float(date_luna[0])
+    total_plata = float(date_luna[1])
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     elements = []
-
     styles = getSampleStyleSheet()
 
     elements.append(Paragraph(f"Fluturaș salariu - {luna}", styles["Title"]))
@@ -305,44 +318,10 @@ def fluturas():
         mimetype="application/pdf"
     )
 
-from openpyxl import Workbook
-from flask import send_file
-import io
 
-@app.route("/export_lunar")
-@login_required
-def export_lunar():
-
-    luna = request.args.get("luna")
-
-    rezultate = db.session.query(
-    Muncitor.nume,
-    db.func.sum(Pontaj.ore),
-    db.func.sum(Pontaj.plata)
-).join(
-    Pontaj, Pontaj.muncitor_id == Muncitor.id
-).filter(
-    Pontaj.data.like(f"{luna}%")
-).group_by(
-    Muncitor.nume
-).all()
-
-    wb = Workbook()
-    ws = wb.active
-    ws.append(["Muncitor", "Total Ore", "Total Plata"])
-
-    for r in rezultate:
-        ws.append([r[0], r[1] or 0, r[2] or 0])
-
-    output = io.BytesIO()
-    wb.save(output)
-    output.seek(0)
-
-    return send_file(
-        output,
-        download_name=f"raport_{luna}.xlsx",
-        as_attachment=True
-    )
+# =====================================================
+# INIT
+# =====================================================
 
 if __name__ == "__main__":
     with app.app_context():
@@ -355,11 +334,6 @@ if __name__ == "__main__":
                 role="admin"
             )
             db.session.add(admin)
-
-        if not Muncitor.query.first():
-            m1 = Muncitor(nume="Ion Popescu", tarif_ora=25)
-            m2 = Muncitor(nume="Maria Ionescu", tarif_ora=30)
-            db.session.add_all([m1, m2])
 
         db.session.commit()
 

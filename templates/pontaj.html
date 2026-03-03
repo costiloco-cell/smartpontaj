@@ -1,67 +1,110 @@
-{% extends "base.html" %}
+@app.route("/pontaj", methods=["GET", "POST"])
+@login_required
+def pontaj():
 
-{% block content %}
+    data_selectata = request.args.get("data")
+    if not data_selectata:
+        data_selectata = datetime.now().strftime("%Y-%m-%d")
 
-<h2>Pontaj zilnic</h2>
+    action = request.args.get("action")
+    if action == "prev":
+        data_selectata = (
+            datetime.strptime(data_selectata, "%Y-%m-%d") - timedelta(days=1)
+        ).strftime("%Y-%m-%d")
+    elif action == "next":
+        data_selectata = (
+            datetime.strptime(data_selectata, "%Y-%m-%d") + timedelta(days=1)
+        ).strftime("%Y-%m-%d")
 
-<form method="POST">
+    muncitori = Muncitor.query.all()
 
-<div class="d-flex align-items-center mb-3">
+    pontaje_existente = {
+        p.muncitor_id: p
+        for p in Pontaj.query.filter_by(data=data_selectata).all()
+    }
 
-    <a href="{{ url_for('pontaj', data=data_selectata, action='prev') }}"
-       class="btn btn-secondary me-2">⬅ Previous</a>
+    def calc_interval(start, stop):
+        if not start or not stop:
+            return 0
+        t1 = datetime.strptime(start, "%H:%M")
+        t2 = datetime.strptime(stop, "%H:%M")
+        if t2 < t1:
+            t2 += timedelta(days=1)
+        return (t2 - t1).total_seconds() / 3600
 
-    <input type="date"
-           class="form-control text-center"
-           value="{{ data_selectata }}"
-           disabled
-           style="max-width: 200px;">
+    if request.method == "POST":
 
-    <a href="{{ url_for('pontaj', data=data_selectata, action='next') }}"
-       class="btn btn-secondary ms-2">Next ➡</a>
+        for m in muncitori:
 
-</div>
+            start1 = request.form.get(f"start1_{m.id}")
+            stop1 = request.form.get(f"stop1_{m.id}")
+            start2 = request.form.get(f"start2_{m.id}")
+            stop2 = request.form.get(f"stop2_{m.id}")
+            tip_zi = request.form.get(f"tip_{m.id}")
+            observatii = request.form.get(f"obs_{m.id}")
 
-<table class="table table-bordered">
-    <tr>
-        <th>Muncitor</th>
-        <th>Start</th>
-        <th>Stop</th>
-    </tr>
+            ore1 = calc_interval(start1, stop1)
+            ore2 = calc_interval(start2, stop2)
 
-    {% for m in muncitori %}
-    <tr>
-        <td>{{ m.nume }} ({{ m.tarif_ora }} lei/h)</td>
+            total_ore = ore1 + ore2
 
-        <td>
-          <input type="time"
-     		name="start_{{ m.id }}"
-       		class="form-control"
-     		value="{{ pontaje[m.id].start if m.id in pontaje else '' }}"
-     		step="60">
-        </td>
+            if tip_zi in ["Concediu", "Boala"]:
+                total_ore = 8
+            elif tip_zi == "Liber":
+                total_ore = 0
 
-        <td>
-            <input type="time"
-                   name="stop_{{ m.id }}"
-                   class="form-control"
-                   value="{{ pontaje[m.id].stop if m.id in pontaje else '' }}">
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+            ore_normale = min(total_ore, 8)
+            ore_suplimentare = max(total_ore - 8, 0)
 
-<div class="mt-4">
-    <div class="card p-3 bg-light">
-        <h5>Total zi</h5>
-        <p><strong>Ore:</strong> {{ total_ore_zi }}</p>
-        <p><strong>Plată:</strong> {{ total_plata_zi }} lei</p>
-    </div>
-</div>
+            plata = (
+                ore_normale * m.tarif_ora +
+                ore_suplimentare * m.tarif_ora * 1.5
+            )
 
-<button class="btn btn-success">Salvează</button>
-<a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Înapoi</a>
+            if total_ore > 12:
+                observatii = (observatii or "") + " ⚠ Peste 12h"
 
-</form>
+            existent = pontaje_existente.get(m.id)
 
-{% endblock %}
+            if existent:
+                existent.start1 = start1
+                existent.stop1 = stop1
+                existent.start2 = start2
+                existent.stop2 = stop2
+                existent.tip_zi = tip_zi
+                existent.ore = total_ore
+                existent.ore_normale = ore_normale
+                existent.ore_suplimentare = ore_suplimentare
+                existent.plata = plata
+                existent.observatii = observatii
+            else:
+                nou = Pontaj(
+                    data=data_selectata,
+                    muncitor_id=m.id,
+                    start1=start1,
+                    stop1=stop1,
+                    start2=start2,
+                    stop2=stop2,
+                    tip_zi=tip_zi,
+                    ore=total_ore,
+                    ore_normale=ore_normale,
+                    ore_suplimentare=ore_suplimentare,
+                    plata=plata,
+                    observatii=observatii
+                )
+                db.session.add(nou)
+
+        db.session.commit()
+        return redirect(url_for("pontaj", data=data_selectata))
+
+    total_ore_zi = sum(p.ore for p in pontaje_existente.values())
+    total_plata_zi = sum(p.plata for p in pontaje_existente.values())
+
+    return render_template(
+        "pontaj.html",
+        muncitori=muncitori,
+        data_selectata=data_selectata,
+        pontaje=pontaje_existente,
+        total_ore_zi=total_ore_zi,
+        total_plata_zi=total_plata_zi
+    )

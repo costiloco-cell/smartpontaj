@@ -16,9 +16,21 @@ class Muncitor(db.Model):
 
 class Pontaj(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    data = db.Column(db.String(20))
-    muncitor_id = db.Column(db.Integer)
-    start = db.Column(db.String(10))
-    stop = db.Column(db.String(10))
-    ore = db.Column(db.Float)
-    plata = db.Column(db.Float)
+
+    data = db.Column(db.String(10))
+    muncitor_id = db.Column(db.Integer, db.ForeignKey("muncitor.id"))
+
+    start1 = db.Column(db.String(5))
+    stop1 = db.Column(db.String(5))
+    start2 = db.Column(db.String(5))
+    stop2 = db.Column(db.String(5))
+
+    tip_zi = db.Column(db.String(20), default="Normal")
+
+    ore = db.Column(db.Float, default=0)
+    ore_normale = db.Column(db.Float, default=0)
+    ore_suplimentare = db.Column(db.Float, default=0)
+
+    plata = db.Column(db.Float, default=0)
+
+    observatii = db.Column(db.String(255))

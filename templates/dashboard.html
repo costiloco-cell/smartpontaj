@@ -14,7 +14,7 @@
             <option value="">Toți</option>
             {% for m in muncitori %}
             <option value="{{ m.id }}"
-                {% if muncitor_selectat == m.id|string %}selected{% endif %}>
+               {% if muncitor_selectat == m.id %}selected{% endif %}>
                 {{ m.nume }}
             </option>
             {% endfor %}
