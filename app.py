@@ -224,9 +224,6 @@ def pontaj():
                 ore_suplimentare * m.tarif_ora * 1.5
             )
 
-            if total_ore > 12:
-                observatii = (observatii or "") + " ⚠ Peste 12h"
-
             existent = pontaje_existente.get(m.id)
 
             if existent:
@@ -271,6 +268,7 @@ def pontaj():
         total_ore_zi=total_ore_zi,
         total_plata_zi=total_plata_zi
     )
+
 # =====================================================
 # Muncitori
 # =====================================================
