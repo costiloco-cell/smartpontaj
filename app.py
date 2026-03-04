@@ -299,6 +299,37 @@ def muncitori():
     )
 
 # =====================================================
+# RAPORT LUNAR
+# =====================================================
+
+@app.route("/raport_lunar")
+@login_required
+def raport_lunar():
+
+    luna = request.args.get("luna")
+
+    if not luna:
+        luna = datetime.now().strftime("%Y-%m")
+
+    rezultate = db.session.query(
+        Muncitor.nume,
+        db.func.coalesce(db.func.sum(Pontaj.ore), 0),
+        db.func.coalesce(db.func.sum(Pontaj.plata), 0)
+    ).join(
+        Pontaj, Pontaj.muncitor_id == Muncitor.id
+    ).filter(
+        Pontaj.data.like(f"{luna}%")
+    ).group_by(
+        Muncitor.nume
+    ).all()
+
+    return render_template(
+        "raport_lunar.html",
+        rezultate=rezultate,
+        luna=luna
+    )
+
+# =====================================================
 # FLUTURAS SALARIU
 # =====================================================
 
