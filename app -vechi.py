@@ -3,30 +3,20 @@ print("APP REAL INCARCAT")
 import os
 import io
 import pandas as pd
-
 from flask import Flask, render_template, redirect, request, url_for, send_file
-from flask_login import LoginManager, login_user, login_required, logout_user
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from models import db, User, Muncitor, Pontaj
-
 from datetime import datetime, timedelta
-
 from werkzeug.security import generate_password_hash, check_password_hash
-
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
 
-
-# =====================================================
-# APP CONFIG
-# =====================================================
-
 app = Flask(__name__)
 
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "smartpontaj_secret")
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "fallback_secret")
 
 database_url = os.environ.get("DATABASE_URL")
-
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
@@ -35,85 +25,58 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
 
-
-# =====================================================
-# LOGIN MANAGER
-# =====================================================
-
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = "login"
-
-
-@login_manager.user_loader
-def load_user(user_id):
-    return db.session.get(User, int(user_id))
-
-
-# =====================================================
-# INIT DB
-# =====================================================
-
 with app.app_context():
-
     db.create_all()
 
     if not User.query.filter_by(username="admin").first():
-
         admin = User(
             username="admin",
             password=generate_password_hash("admin123"),
             role="admin"
         )
-
         db.session.add(admin)
         db.session.commit()
-
-
-# =====================================================
-# HOME
-# =====================================================
-
-@app.route("/")
-def home():
-    return redirect(url_for("login"))
+    
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
 
 
 # =====================================================
 # LOGIN
 # =====================================================
 
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+@app.route("/")
+def home():
+    return "SmartPontaj Running"
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
-
     if request.method == "POST":
-
         user = User.query.filter_by(username=request.form["username"]).first()
 
         if user and check_password_hash(user.password, request.form["password"]):
-
             login_user(user)
-
             return redirect(url_for("dashboard"))
 
     return render_template("login.html")
 
 
-# =====================================================
-# LOGOUT
-# =====================================================
-
 @app.route("/logout")
 @login_required
 def logout():
-
     logout_user()
-
     return redirect(url_for("login"))
 
 
 # =====================================================
-# DASHBOARD
+# DASHBOARD CU COMPARARE LUNI
 # =====================================================
 
 @app.route("/dashboard")
@@ -127,7 +90,6 @@ def dashboard():
         luna = datetime.now().strftime("%Y-%m")
 
     def total_luna(luna_target):
-
         q = db.session.query(
             db.func.coalesce(db.func.sum(Pontaj.ore), 0),
             db.func.coalesce(db.func.sum(Pontaj.plata), 0)
@@ -152,13 +114,12 @@ def dashboard():
     plata_anterior = float(total_anterior[1])
 
     diferenta_proc = 0
-
     if ore_anterior > 0:
         diferenta_proc = round(
-            ((ore_curent - ore_anterior) / ore_anterior) * 100,
-            2
+            ((ore_curent - ore_anterior) / ore_anterior) * 100, 2
         )
 
+    # ===== GRAFIC PE ZILE =====
     query = db.session.query(
         Pontaj.data,
         db.func.coalesce(db.func.sum(Pontaj.ore), 0),
@@ -197,7 +158,7 @@ def dashboard():
 
 
 # =====================================================
-# PONTAJ
+# PONTAJ 24H + OBSERVATII
 # =====================================================
 
 @app.route("/pontaj", methods=["GET", "POST"])
@@ -205,17 +166,14 @@ def dashboard():
 def pontaj():
 
     data_selectata = request.args.get("data")
-
     if not data_selectata:
         data_selectata = datetime.now().strftime("%Y-%m-%d")
 
     action = request.args.get("action")
-
     if action == "prev":
         data_selectata = (
             datetime.strptime(data_selectata, "%Y-%m-%d") - timedelta(days=1)
         ).strftime("%Y-%m-%d")
-
     elif action == "next":
         data_selectata = (
             datetime.strptime(data_selectata, "%Y-%m-%d") + timedelta(days=1)
@@ -229,16 +187,12 @@ def pontaj():
     }
 
     def calc_interval(start, stop):
-
         if not start or not stop:
             return 0
-
         t1 = datetime.strptime(start, "%H:%M")
         t2 = datetime.strptime(stop, "%H:%M")
-
         if t2 < t1:
             t2 += timedelta(days=1)
-
         return (t2 - t1).total_seconds() / 3600
 
     if request.method == "POST":
@@ -247,10 +201,8 @@ def pontaj():
 
             start1 = request.form.get(f"start1_{m.id}")
             stop1 = request.form.get(f"stop1_{m.id}")
-
             start2 = request.form.get(f"start2_{m.id}")
             stop2 = request.form.get(f"stop2_{m.id}")
-
             tip_zi = request.form.get(f"tip_{m.id}")
             observatii = request.form.get(f"obs_{m.id}")
 
@@ -261,7 +213,6 @@ def pontaj():
 
             if tip_zi in ["Concediu", "Boala"]:
                 total_ore = 8
-
             elif tip_zi == "Liber":
                 total_ore = 0
 
@@ -276,7 +227,6 @@ def pontaj():
             existent = pontaje_existente.get(m.id)
 
             if existent:
-
                 existent.start1 = start1
                 existent.stop1 = stop1
                 existent.start2 = start2
@@ -287,9 +237,7 @@ def pontaj():
                 existent.ore_suplimentare = ore_suplimentare
                 existent.plata = plata
                 existent.observatii = observatii
-
             else:
-
                 nou = Pontaj(
                     data=data_selectata,
                     muncitor_id=m.id,
@@ -304,11 +252,9 @@ def pontaj():
                     plata=plata,
                     observatii=observatii
                 )
-
                 db.session.add(nou)
 
         db.session.commit()
-
         return redirect(url_for("pontaj", data=data_selectata))
 
     total_ore_zi = sum(p.ore for p in pontaje_existente.values())
@@ -322,7 +268,6 @@ def pontaj():
         total_ore_zi=total_ore_zi,
         total_plata_zi=total_plata_zi
     )
-
 
 # =====================================================
 # MUNCITORI
@@ -338,7 +283,6 @@ def muncitori():
         tarif = request.form.get("tarif")
 
         if nume and tarif:
-
             muncitor = Muncitor(
                 nume=nume,
                 tarif_ora=float(tarif)
@@ -355,7 +299,6 @@ def muncitori():
         "muncitori.html",
         muncitori=lista_muncitori
     )
-
 
 # =====================================================
 # ADMIN
@@ -375,7 +318,6 @@ def admin():
         pontaje=pontaje,
         utilizatori=utilizatori
     )
-
 
 # =====================================================
 # RAPORT LUNAR
@@ -408,9 +350,8 @@ def raport_lunar():
         luna=luna
     )
 
-
 # =====================================================
-# FLUTURAS
+# FLUTURAS SALARIU
 # =====================================================
 
 @app.route("/fluturas")
@@ -420,13 +361,10 @@ def fluturas():
     luna = request.args.get("luna")
     muncitor_id = request.args.get("muncitor", type=int)
 
-    if not muncitor_id or not luna:
-        return "Selectează angajatul și luna."
+    if not muncitor_id:
+        return "Selectează un angajat."
 
-    muncitor = db.session.get(Muncitor, muncitor_id)
-
-    if not muncitor:
-        return "Angajat inexistent."
+    muncitor = Muncitor.query.get(muncitor_id)
 
     date_luna = db.session.query(
         db.func.coalesce(db.func.sum(Pontaj.ore), 0),
@@ -440,17 +378,11 @@ def fluturas():
     total_plata = float(date_luna[1])
 
     buffer = io.BytesIO()
-
     doc = SimpleDocTemplate(buffer, pagesize=A4)
-
+    elements = []
     styles = getSampleStyleSheet()
 
-    elements = []
-
-    elements.append(
-        Paragraph(f"Fluturaș salariu - {luna}", styles["Title"])
-    )
-
+    elements.append(Paragraph(f"Fluturaș salariu - {luna}", styles["Title"]))
     elements.append(Spacer(1, 20))
 
     data = [
@@ -460,7 +392,6 @@ def fluturas():
     ]
 
     table = Table(data)
-
     elements.append(table)
 
     doc.build(elements)
@@ -473,11 +404,6 @@ def fluturas():
         download_name=f"fluturas_{muncitor.nume}_{luna}.pdf",
         mimetype="application/pdf"
     )
-
-
-# =====================================================
-# EXPORT EXCEL
-# =====================================================
 
 @app.route("/export_lunar")
 @login_required
@@ -521,12 +447,7 @@ def export_lunar():
     ])
 
     buffer = io.BytesIO()
-
-    try:
-        df.to_excel(buffer, index=False)
-    except Exception as e:
-        return str(e)
-
+    df.to_excel(buffer, index=False)
     buffer.seek(0)
 
     return send_file(
@@ -536,10 +457,22 @@ def export_lunar():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-
 # =====================================================
-# RUN
+# INIT
 # =====================================================
 
 if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
+
+        if not User.query.filter_by(username="admin").first():
+            admin = User(
+                username="admin",
+                password=generate_password_hash("admin123"),
+                role="admin"
+            )
+            db.session.add(admin)
+
+        db.session.commit()
+
     app.run()

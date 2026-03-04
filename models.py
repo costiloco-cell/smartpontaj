@@ -5,32 +5,30 @@ db = SQLAlchemy()
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(200))
-    role = db.Column(db.String(50))
+    username = db.Column(db.String(100))
+    password = db.Column(db.String(100))
+
 
 class Muncitor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nume = db.Column(db.String(100))
     tarif_ora = db.Column(db.Float)
 
+
 class Pontaj(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
-    data = db.Column(db.String(10))
+    data = db.Column(db.String(20))
+
     muncitor_id = db.Column(db.Integer, db.ForeignKey("muncitor.id"))
 
     start1 = db.Column(db.String(5))
     stop1 = db.Column(db.String(5))
+
     start2 = db.Column(db.String(5))
     stop2 = db.Column(db.String(5))
 
-    tip_zi = db.Column(db.String(20), default="Normal")
+    ore = db.Column(db.Float)
+    plata = db.Column(db.Float)
 
-    ore = db.Column(db.Float, default=0)
-    ore_normale = db.Column(db.Float, default=0)
-    ore_suplimentare = db.Column(db.Float, default=0)
-
-    plata = db.Column(db.Float, default=0)
-
-    observatii = db.Column(db.String(255))
+    observatii = db.Column(db.String(200))
