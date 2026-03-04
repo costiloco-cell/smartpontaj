@@ -6,3 +6,5 @@ Flask-SQLAlchemy
 openpyxl
 Werkzeug
 reportlab
+pandas
+openpyxl

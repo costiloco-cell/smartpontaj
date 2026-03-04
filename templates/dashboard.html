@@ -59,6 +59,11 @@
    class="btn btn-success mt-3">
    Generează Fluturaș PDF
 </a>
+
+<a href="{{ url_for('export_lunar', luna=luna) }}"
+class="btn btn-success">
+Export Excel
+</a>
 {% endif %}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

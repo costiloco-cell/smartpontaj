@@ -2,6 +2,7 @@ print("APP REAL INCARCAT")
 
 import os
 import io
+import pandas as pd
 from flask import Flask, render_template, redirect, request, url_for, send_file
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from models import db, User, Muncitor, Pontaj
@@ -354,6 +355,57 @@ def fluturas():
         mimetype="application/pdf"
     )
 
+@app.route("/export_lunar")
+@login_required
+def export_lunar():
+
+    luna = request.args.get("luna")
+
+    if not luna:
+        return "Selectează luna"
+
+    date = db.session.query(
+        Pontaj.data,
+        Muncitor.nume,
+        Pontaj.start1,
+        Pontaj.stop1,
+        Pontaj.start2,
+        Pontaj.stop2,
+        Pontaj.ore,
+        Pontaj.ore_normale,
+        Pontaj.ore_suplimentare,
+        Pontaj.plata,
+        Pontaj.observatii
+    ).join(
+        Muncitor, Pontaj.muncitor_id == Muncitor.id
+    ).filter(
+        Pontaj.data.like(f"{luna}%")
+    ).all()
+
+    df = pd.DataFrame(date, columns=[
+        "Data",
+        "Muncitor",
+        "Start1",
+        "Stop1",
+        "Start2",
+        "Stop2",
+        "Total ore",
+        "Ore normale",
+        "Ore suplimentare",
+        "Plata",
+        "Observatii"
+    ])
+
+    buffer = io.BytesIO()
+    df.to_excel(buffer, index=False)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"pontaj_{luna}.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 # =====================================================
 # INIT
