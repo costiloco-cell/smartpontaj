@@ -270,6 +270,34 @@ def pontaj():
         total_ore_zi=total_ore_zi,
         total_plata_zi=total_plata_zi
     )
+# =====================================================
+# Muncitori
+# =====================================================
+
+@app.route("/muncitori", methods=["GET", "POST"])
+@login_required
+def muncitori():
+
+    if request.method == "POST":
+        nume = request.form.get("nume")
+        tarif = request.form.get("tarif")
+
+        if nume and tarif:
+            m = Muncitor(
+                nume=nume,
+                tarif_ora=float(tarif)
+            )
+            db.session.add(m)
+            db.session.commit()
+
+        return redirect(url_for("muncitori"))
+
+    lista = Muncitor.query.order_by(Muncitor.nume).all()
+
+    return render_template(
+        "muncitori.html",
+        muncitori=lista
+    )
 
 # =====================================================
 # FLUTURAS SALARIU
