@@ -2,20 +2,12 @@
 
 {% block content %}
 
-<h2>Panou Administrare</h2>
+<h2>Admin</h2>
 
-<div class="list-group">
-    <a href="{{ url_for('muncitori') }}" class="list-group-item list-group-item-action">
-        Administrare Muncitori
-    </a>
-
-    <a href="{{ url_for('raport_lunar') }}" class="list-group-item list-group-item-action">
-        Raport Lunar
-    </a>
-
-    <a href="{{ url_for('dashboard') }}" class="list-group-item list-group-item-action">
-        Dashboard
-    </a>
-</div>
+<ul>
+<li>Total muncitori: {{ muncitori }}</li>
+<li>Total pontaje: {{ pontaje }}</li>
+<li>Total utilizatori: {{ utilizatori }}</li>
+</ul>
 
 {% endblock %}

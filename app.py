@@ -299,6 +299,25 @@ def muncitori():
     )
 
 # =====================================================
+# ADMIN
+# =====================================================
+
+@app.route("/admin")
+@login_required
+def admin():
+
+    muncitori = Muncitor.query.count()
+    pontaje = Pontaj.query.count()
+    utilizatori = User.query.count()
+
+    return render_template(
+        "admin.html",
+        muncitori=muncitori,
+        pontaje=pontaje,
+        utilizatori=utilizatori
+    )
+
+# =====================================================
 # RAPORT LUNAR
 # =====================================================
 
