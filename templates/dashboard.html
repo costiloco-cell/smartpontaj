@@ -46,7 +46,42 @@ Diferență: {{ diferenta_proc }} %
 <canvas id="graficOre"></canvas>
 
 <script>
+<div class="row">
 
+<div class="col-md-4">
+
+<div class="card p-3">
+
+<h5>Total ore</h5>
+<h2>{{ total_ore }}</h2>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="card p-3">
+
+<h5>Total plată</h5>
+<h2>{{ total_plata }} lei</h2>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="card p-3">
+
+<h5>Diferență</h5>
+<h2>{{ diferenta_proc }} %</h2>
+
+</div>
+
+</div>
+
+</div>
 const ctx = document.getElementById('graficOre');
 
 new Chart(ctx, {

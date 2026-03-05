@@ -2,42 +2,82 @@
 <html lang="ro">
 
 <head>
+
 <meta charset="UTF-8">
 <title>SmartPontaj</title>
 
-<link rel="stylesheet"
-href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+background:#f5f7fb;
+}
+
+.sidebar{
+height:100vh;
+background:#1f2d3d;
+color:white;
+padding:20px;
+}
+
+.sidebar a{
+color:white;
+text-decoration:none;
+display:block;
+padding:10px;
+border-radius:6px;
+margin-bottom:5px;
+}
+
+.sidebar a:hover{
+background:#3b4b5c;
+}
+
+.card{
+border:none;
+box-shadow:0 3px 10px rgba(0,0,0,0.08);
+}
+
+</style>
 
 </head>
 
 <body>
 
-<div class="container mt-4">
+<div class="container-fluid">
 
-<nav class="mb-4">
+<div class="row">
 
-<a class="btn btn-outline-primary" href="{{ url_for('dashboard') }}">Dashboard</a>
+<div class="col-2 sidebar">
 
-<a class="btn btn-outline-primary" href="{{ url_for('pontaj') }}">Pontaj</a>
-
-<a class="btn btn-outline-primary" href="{{ url_for('muncitori') }}">Muncitori</a>
-
-<a class="btn btn-outline-primary" href="{{ url_for('raport_lunar') }}">Raport lunar</a>
-
-<a class="btn btn-outline-primary" href="{{ url_for('fluturas') }}">Fluturaș</a>
-
-<a class="btn btn-outline-secondary" href="{{ url_for('admin') }}">Admin</a>
-
-<a class="btn btn-danger" href="{{ url_for('logout') }}">Logout</a>
-
-</nav>
+<h4>SmartPontaj</h4>
 
 <hr>
 
+<a href="{{ url_for('dashboard') }}">📊 Dashboard</a>
+<a href="{{ url_for('pontaj') }}">🕒 Pontaj</a>
+<a href="{{ url_for('muncitori') }}">👷 Muncitori</a>
+<a href="{{ url_for('raport_lunar') }}">📅 Raport lunar</a>
+<a href="{{ url_for('fluturas') }}">💰 Fluturaș</a>
+<a href="{{ url_for('admin') }}">⚙ Admin</a>
+
+<hr>
+
+<a href="{{ url_for('logout') }}">Logout</a>
+
+</div>
+
+<div class="col-10 p-4">
+
 {% block content %}
 {% endblock %}
+
+</div>
+
+</div>
 
 </div>
 

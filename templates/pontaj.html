@@ -2,82 +2,134 @@
 
 {% block content %}
 
-<h2>Pontaj</h2>
+<h2 class="mb-3">Pontaj zilnic</h2>
 
-<a class="btn btn-secondary"
+<div class="mb-3">
+
+<a class="btn btn-outline-secondary"
 href="{{ url_for('pontaj', data=data_selectata, action='prev') }}">
-⬅
+⬅ Ziua anterioară
 </a>
 
-<strong>{{ data_selectata }}</strong>
+<strong class="mx-3 fs-5">{{ data_selectata }}</strong>
 
-<a class="btn btn-secondary"
+<a class="btn btn-outline-secondary"
 href="{{ url_for('pontaj', data=data_selectata, action='next') }}">
-➡
+Ziua următoare ➡
 </a>
+
+</div>
 
 <form method="POST">
 
-<table class="table table-bordered mt-3">
+<div class="card shadow-sm">
+
+<div class="card-body">
+
+<table class="table table-bordered table-hover align-middle">
+
+<thead class="table-dark">
 
 <tr>
-
 <th>Muncitor</th>
 <th>Start1</th>
 <th>Stop1</th>
 <th>Start2</th>
 <th>Stop2</th>
 <th>Tip zi</th>
+<th>Total ore</th>
+<th>Plată estimată</th>
 <th>Observații</th>
-
 </tr>
+
+</thead>
+
+<tbody>
 
 {% for m in muncitori %}
 
-<tr>
+<tr id="row_{{m.id}}" data-tarif="{{m.tarif_ora}}">
 
-<td>{{ m.nume }}</td>
+<td class="fw-bold">{{ m.nume }}</td>
 
 <td>
 <input type="time"
-name="start1_{{ m.id }}"
-value="{{ pontaje[m.id].start1 if m.id in pontaje else '' }}">
+id="start1_{{m.id}}"
+name="start1_{{m.id}}"
+class="form-control"
+value="{{ pontaje[m.id].start1 if m.id in pontaje else '' }}"
+onchange="calc({{m.id}})">
 </td>
 
 <td>
 <input type="time"
-name="stop1_{{ m.id }}"
-value="{{ pontaje[m.id].stop1 if m.id in pontaje else '' }}">
+id="stop1_{{m.id}}"
+name="stop1_{{m.id}}"
+class="form-control"
+value="{{ pontaje[m.id].stop1 if m.id in pontaje else '' }}"
+onchange="calc({{m.id}})">
 </td>
 
 <td>
 <input type="time"
-name="start2_{{ m.id }}"
-value="{{ pontaje[m.id].start2 if m.id in pontaje else '' }}">
+id="start2_{{m.id}}"
+name="start2_{{m.id}}"
+class="form-control"
+value="{{ pontaje[m.id].start2 if m.id in pontaje else '' }}"
+onchange="calc({{m.id}})">
 </td>
 
 <td>
 <input type="time"
-name="stop2_{{ m.id }}"
-value="{{ pontaje[m.id].stop2 if m.id in pontaje else '' }}">
+id="stop2_{{m.id}}"
+name="stop2_{{m.id}}"
+class="form-control"
+value="{{ pontaje[m.id].stop2 if m.id in pontaje else '' }}"
+onchange="calc({{m.id}})">
 </td>
 
 <td>
 
-<select name="tip_{{ m.id }}">
+<select class="form-select" name="tip_{{m.id}}">
 
 <option value="Lucru">Lucru</option>
-<option value="Concediu">Concediu</option>
-<option value="Boala">Boală</option>
-<option value="Liber">Liber</option>
+
+<option value="Concediu"
+{% if m.id in pontaje and pontaje[m.id].tip_zi=="Concediu" %}selected{% endif %}>
+Concediu
+</option>
+
+<option value="Boala"
+{% if m.id in pontaje and pontaje[m.id].tip_zi=="Boala" %}selected{% endif %}>
+Boală
+</option>
+
+<option value="Liber"
+{% if m.id in pontaje and pontaje[m.id].tip_zi=="Liber" %}selected{% endif %}>
+Liber
+</option>
 
 </select>
 
 </td>
 
 <td>
+<span id="ore_{{m.id}}">
+{{ pontaje[m.id].ore if m.id in pontaje else 0 }}
+</span>
+</td>
 
-<input name="obs_{{ m.id }}"
+<td>
+<span id="plata_{{m.id}}">
+{{ pontaje[m.id].plata if m.id in pontaje else 0 }}
+</span>
+</td>
+
+<td>
+
+<input class="form-control"
+name="obs_{{m.id}}"
+placeholder="Observații..."
 value="{{ pontaje[m.id].observatii if m.id in pontaje else '' }}">
 
 </td>
@@ -86,15 +138,110 @@ value="{{ pontaje[m.id].observatii if m.id in pontaje else '' }}">
 
 {% endfor %}
 
+</tbody>
+
 </table>
 
-<button class="btn btn-success">Salvează pontaj</button>
+</div>
+
+</div>
+
+<button class="btn btn-success mt-3">
+💾 Salvează pontaj
+</button>
 
 </form>
 
 <hr>
 
-Total ore zi: {{ total_ore_zi }} <br>
-Total plată zi: {{ total_plata_zi }} lei
+<div class="row">
+
+<div class="col-md-6">
+
+<div class="card p-3">
+
+<h5>Total ore zi</h5>
+
+<h3 id="totalOreZi">{{ total_ore_zi }}</h3>
+
+</div>
+
+</div>
+
+<div class="col-md-6">
+
+<div class="card p-3">
+
+<h5>Total plată zi</h5>
+
+<h3 id="totalPlataZi">{{ total_plata_zi }} lei</h3>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+function calc(id){
+
+let start1 = document.getElementById("start1_"+id).value
+let stop1 = document.getElementById("stop1_"+id).value
+
+let start2 = document.getElementById("start2_"+id).value
+let stop2 = document.getElementById("stop2_"+id).value
+
+let row = document.getElementById("row_"+id)
+let tarif = parseFloat(row.dataset.tarif)
+
+function diff(start,stop){
+
+if(!start || !stop) return 0
+
+let s = start.split(":")
+let e = stop.split(":")
+
+let d1 = new Date(0,0,0,s[0],s[1])
+let d2 = new Date(0,0,0,e[0],e[1])
+
+if(d2 < d1) d2.setDate(d2.getDate()+1)
+
+return (d2-d1)/3600000
+
+}
+
+let ore = diff(start1,stop1) + diff(start2,stop2)
+
+document.getElementById("ore_"+id).innerHTML = ore.toFixed(2)
+
+let plata = ore * tarif
+
+document.getElementById("plata_"+id).innerHTML = plata.toFixed(2)
+
+calcTotal()
+
+}
+
+function calcTotal(){
+
+let totalOre = 0
+let totalPlata = 0
+
+document.querySelectorAll("[id^='ore_']").forEach(el=>{
+totalOre += parseFloat(el.innerHTML || 0)
+})
+
+document.querySelectorAll("[id^='plata_']").forEach(el=>{
+totalPlata += parseFloat(el.innerHTML || 0)
+})
+
+document.getElementById("totalOreZi").innerHTML = totalOre.toFixed(2)
+document.getElementById("totalPlataZi").innerHTML = totalPlata.toFixed(2)
+
+}
+
+</script>
 
 {% endblock %}
