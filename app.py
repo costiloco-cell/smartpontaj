@@ -376,6 +376,39 @@ def export_lunar():
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
+# =====================================================
+# FLUTURAS SALARIU
+# =====================================================
+
+@app.route("/fluturas")
+@login_required
+def fluturas():
+
+    luna = request.args.get("luna")
+
+    if not luna:
+        luna = datetime.now().strftime("%Y-%m")
+
+    muncitori = Muncitor.query.all()
+
+    rezultate = db.session.query(
+        Muncitor.nume,
+        db.func.sum(Pontaj.ore),
+        db.func.sum(Pontaj.plata)
+    ).join(
+        Pontaj, Pontaj.muncitor_id == Muncitor.id
+    ).filter(
+        Pontaj.data.like(f"{luna}%")
+    ).group_by(
+        Muncitor.nume
+    ).all()
+
+    return render_template(
+        "fluturas.html",
+        rezultate=rezultate,
+        luna=luna,
+        muncitori=muncitori
+    )
 
 # =====================================================
 # RUN
