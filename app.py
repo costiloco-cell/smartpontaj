@@ -9,6 +9,8 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 
+from flask_migrate import Migrate
+
 from models import db, User, Muncitor, Pontaj
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
@@ -36,7 +38,7 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["REMEMBER_COOKIE_DURATION"] = timedelta(days=7)
 
 db.init_app(app)
-
+migrate = Migrate(app, db)
 
 # =====================================================
 # LOGIN MANAGER
@@ -98,12 +100,11 @@ def create_admin():
 # =====================================================
 
 with app.app_context():
+
+    db.drop_all()
     db.create_all()
 
-    try:
-        create_admin()
-    except:
-        pass
+    create_admin()
 
 # =====================================================
 # HOME
