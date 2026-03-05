@@ -2,16 +2,52 @@
 
 {% block content %}
 
-<h2>Admin</h2>
+<h2>Admin Panel</h2>
 
-<ul>
+<h3>Creează utilizator</h3>
 
-<li>Total muncitori: {{ muncitori }}</li>
+<form method="POST">
 
-<li>Total pontaje: {{ pontaje }}</li>
+<label>Username</label>
+<input name="username" required>
 
-<li>Total utilizatori: {{ utilizatori }}</li>
+<label>Parolă</label>
+<input type="password" name="password" required>
 
-</ul>
+<label>Rol</label>
+<select name="role">
+
+<option value="user">User</option>
+<option value="admin">Admin</option>
+
+</select>
+
+<button class="btn btn-success">Creează</button>
+
+</form>
+
+<hr>
+
+<h3>Utilizatori existenți</h3>
+
+<table class="table table-bordered">
+
+<tr>
+<th>ID</th>
+<th>Username</th>
+<th>Rol</th>
+</tr>
+
+{% for u in users %}
+
+<tr>
+<td>{{ u.id }}</td>
+<td>{{ u.username }}</td>
+<td>{{ u.role }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
 
 {% endblock %}

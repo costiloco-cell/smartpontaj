@@ -136,7 +136,7 @@ def logout():
 
 # ADMIN
 
-@app.route("/admin")
+@app.route("/admin", methods=["GET", "POST"])
 @login_required
 def admin():
 
@@ -144,9 +144,35 @@ def admin():
         flash("Acces interzis")
         return redirect(url_for("dashboard"))
 
+    if request.method == "POST":
+
+        username = request.form.get("username")
+        password = request.form.get("password")
+        role = request.form.get("role")
+
+        if User.query.filter_by(username=username).first():
+            flash("Utilizatorul exista deja")
+            return redirect(url_for("admin"))
+
+        user = User(
+            username=username,
+            password=generate_password_hash(password),
+            role=role
+        )
+
+        db.session.add(user)
+        db.session.commit()
+
+        flash("Utilizator creat")
+
+        return redirect(url_for("admin"))
+
     users = User.query.all()
 
-    return render_template("admin.html", users=users)
+    return render_template(
+        "admin.html",
+        users=users
+    )
 
 # =====================================================
 # Schimbare parola
