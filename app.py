@@ -77,10 +77,12 @@ def create_admin():
 # =====================================================
 
 with app.app_context():
-
     db.create_all()
-    create_admin()
 
+    try:
+        create_admin()
+    except:
+        pass
 
 # =====================================================
 # HOME
