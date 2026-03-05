@@ -7,12 +7,20 @@
 <form method="POST">
 
 <label>Nume</label>
-<input name="nume" value="{{ muncitor.nume }}">
+<br>
+<input name="nume" value="{{ muncitor.nume }}" required>
+
+<br><br>
 
 <label>Tarif oră</label>
-<input name="tarif" value="{{ muncitor.tarif_ora }}">
+<br>
+<input name="tarif" value="{{ muncitor.tarif_ora }}" required>
+
+<br><br>
 
 <button class="btn btn-success">Salvează</button>
+
+<a href="{{ url_for('muncitori') }}" class="btn btn-secondary">Înapoi</a>
 
 </form>
 

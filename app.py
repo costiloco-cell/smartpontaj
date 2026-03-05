@@ -346,17 +346,25 @@ def pontaj():
 
 
 # =====================================================
-# MUNCITORI
+# MUNCITORI - LISTA + ADAUGARE
 # =====================================================
 
 @app.route("/muncitori", methods=["GET", "POST"])
 @login_required
 def muncitori():
 
+    if current_user.role != "admin":
+        flash("Acces interzis")
+        return redirect(url_for("dashboard"))
+
     if request.method == "POST":
 
         nume = request.form.get("nume")
         tarif = request.form.get("tarif")
+
+        if not nume or not tarif:
+            flash("Completează toate câmpurile")
+            return redirect(url_for("muncitori"))
 
         muncitor = Muncitor(
             nume=nume,
@@ -366,13 +374,69 @@ def muncitori():
         db.session.add(muncitor)
         db.session.commit()
 
+        flash("Muncitor adăugat")
+
         return redirect(url_for("muncitori"))
+
+    lista = Muncitor.query.order_by(Muncitor.id.desc()).all()
 
     return render_template(
         "muncitori.html",
-        muncitori=Muncitor.query.all()
+        muncitori=lista
     )
 
+
+# =====================================================
+# EDIT MUNCITOR
+# =====================================================
+
+@app.route("/edit_muncitor/<int:id>", methods=["GET", "POST"])
+@login_required
+def edit_muncitor(id):
+
+    if current_user.role != "admin":
+        flash("Acces interzis")
+        return redirect(url_for("dashboard"))
+
+    muncitor = Muncitor.query.get_or_404(id)
+
+    if request.method == "POST":
+
+        muncitor.nume = request.form.get("nume")
+        muncitor.tarif_ora = float(request.form.get("tarif"))
+
+        db.session.commit()
+
+        flash("Muncitor actualizat")
+
+        return redirect(url_for("muncitori"))
+
+    return render_template(
+        "edit_muncitor.html",
+        muncitor=muncitor
+    )
+
+
+# =====================================================
+# DELETE MUNCITOR
+# =====================================================
+
+@app.route("/delete_muncitor/<int:id>")
+@login_required
+def delete_muncitor(id):
+
+    if current_user.role != "admin":
+        flash("Acces interzis")
+        return redirect(url_for("dashboard"))
+
+    muncitor = Muncitor.query.get_or_404(id)
+
+    db.session.delete(muncitor)
+    db.session.commit()
+
+    flash("Muncitor șters")
+
+    return redirect(url_for("muncitori"))
 
 # =====================================================
 # RAPORT LUNAR
