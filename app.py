@@ -4,13 +4,14 @@ import os
 import io
 import pandas as pd
 
-from flask import Flask, render_template, redirect, request, url_for, send_file
-from flask_login import LoginManager, login_user, login_required, logout_user
+
 from models import db, User, Muncitor, Pontaj
 
-from datetime import datetime, timedelta
-
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timedelta
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
 from reportlab.lib.styles import getSampleStyleSheet
@@ -23,42 +24,60 @@ from reportlab.lib.pagesizes import A4
 
 app = Flask(__name__)
 
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "smartpontaj_secret")
-
-database_url = os.environ.get("DATABASE_URL")
-
-if database_url and database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
-
-app.config["SQLALCHEMY_DATABASE_URI"] = database_url or "sqlite:///database.db"
+app.config["SECRET_KEY"] = "smartpontaj_secret"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SESSION_COOKIE_SECURE"] = False
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["REMEMBER_COOKIE_DURATION"] = timedelta(days=7)
 
 db.init_app(app)
 
-
-# =====================================================
-# LOGIN MANAGER
-# =====================================================
-
-login_manager = LoginManager()
-login_manager.init_app(app)
+login_manager = LoginManager(app)
+login_manager.session_protection = "strong"
 login_manager.login_view = "login"
 
+MAX_LOGIN_ATTEMPTS = 5
+LOCK_TIME = 10
+
+# =========================
+# USER MODEL
+# =========================
+
+class User(UserMixin, db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    username = db.Column(db.String(50), unique=True)
+
+    password = db.Column(db.String(200))
+
+    role = db.Column(db.String(20), default="user")
+
+    login_attempts = db.Column(db.Integer, default=0)
+
+    locked_until = db.Column(db.DateTime, nullable=True)
+
+
+# =========================
+# LOGIN MANAGER
+# =========================
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User, int(user_id))
+
+    return User.query.get(int(user_id))
 
 
-# =====================================================
-# INIT DB
-# =====================================================
+# =========================
+# CREATE ADMIN
+# =========================
 
-with app.app_context():
+def create_admin():
 
-    db.create_all()
+    admin = User.query.filter_by(username="admin").first()
 
-    if not User.query.filter_by(username="admin").first():
+    if not admin:
 
         admin = User(
             username="admin",
@@ -70,38 +89,65 @@ with app.app_context():
         db.session.commit()
 
 
-# =====================================================
-# HOME
-# =====================================================
-
-@app.route("/")
-def home():
-    return redirect(url_for("login"))
-
-
-# =====================================================
+# =========================
 # LOGIN
-# =====================================================
+# =========================
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/login", methods=["GET","POST"])
 def login():
 
     if request.method == "POST":
 
-        user = User.query.filter_by(username=request.form["username"]).first()
+        username = request.form["username"]
+        password = request.form["password"]
 
-        if user and check_password_hash(user.password, request.form["password"]):
+        user = User.query.filter_by(username=username).first()
 
-            login_user(user)
+        if not user:
+
+            flash("Utilizator inexistent")
+            return redirect(url_for("login"))
+
+        # verificare blocare
+        if user.locked_until and user.locked_until > datetime.utcnow():
+
+            flash("Cont blocat temporar")
+            return redirect(url_for("login"))
+
+        # verificare parola
+        if check_password_hash(user.password, password):
+
+            user.login_attempts = 0
+            user.locked_until = None
+            db.session.commit()
+
+            remember = True if request.form.get("remember") else False
+
+            login_user(user, remember=remember)
 
             return redirect(url_for("dashboard"))
+
+        else:
+
+            user.login_attempts += 1
+
+            if user.login_attempts >= MAX_LOGIN_ATTEMPTS:
+
+                user.locked_until = datetime.utcnow() + timedelta(minutes=LOCK_TIME)
+                user.login_attempts = 0
+
+                flash("Prea multe incercari. Cont blocat 10 minute.")
+
+            db.session.commit()
+
+            flash("Parola incorecta")
 
     return render_template("login.html")
 
 
-# =====================================================
+# =========================
 # LOGOUT
-# =====================================================
+# =========================
 
 @app.route("/logout")
 @login_required
@@ -109,6 +155,42 @@ def logout():
 
     logout_user()
 
+    return redirect(url_for("login"))
+
+
+# =========================
+# ADMIN
+# =========================
+
+@app.route("/admin")
+@login_required
+def admin():
+
+    if current_user.role != "admin":
+
+        return "Acces interzis"
+
+    users = User.query.all()
+
+    return render_template("admin.html", users=users)
+
+
+# =========================
+# INIT DATABASE
+# =========================
+
+with app.app_context():
+
+    db.create_all()
+
+    create_admin()
+
+# =====================================================
+# HOME
+# =====================================================
+
+@app.route("/")
+def home():
     return redirect(url_for("login"))
 
 
@@ -194,6 +276,17 @@ def dashboard():
         muncitori=muncitori,
         muncitor_selectat=muncitor_id
     )
+
+# =========================
+# DASHBOARD
+# =========================
+
+# @app.route("/dashboard")
+
+# @login_required
+# def dashboard():
+
+  #  return render_template("dashboard.html")
 
 
 # =====================================================
@@ -354,26 +447,6 @@ def muncitori():
     return render_template(
         "muncitori.html",
         muncitori=lista_muncitori
-    )
-
-
-# =====================================================
-# ADMIN
-# =====================================================
-
-@app.route("/admin")
-@login_required
-def admin():
-
-    muncitori = Muncitor.query.count()
-    pontaje = Pontaj.query.count()
-    utilizatori = User.query.count()
-
-    return render_template(
-        "admin.html",
-        muncitori=muncitori,
-        pontaje=pontaje,
-        utilizatori=utilizatori
     )
 
 
@@ -542,4 +615,5 @@ def export_lunar():
 # =====================================================
 
 if __name__ == "__main__":
-    app.run()
+
+    app.run(debug=True)
