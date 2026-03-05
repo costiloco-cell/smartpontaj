@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Fluturaș salariu</h2>
+
+<form>
+
+<label>Luna</label>
+
+<input type="month" name="luna">
+
+<label>Muncitor</label>
+
+<select name="muncitor">
+
+{% for m in muncitori %}
+
+<option value="{{ m.id }}">{{ m.nume }}</option>
+
+{% endfor %}
+
+</select>
+
+<button class="btn btn-primary">Generează PDF</button>
+
+</form>
+
+{% endblock %}

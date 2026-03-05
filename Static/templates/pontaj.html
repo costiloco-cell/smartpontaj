@@ -4,32 +4,24 @@
 
 <h2>Pontaj</h2>
 
-<a class="btn btn-secondary"
-href="{{ url_for('pontaj', data=data_selectata, action='prev') }}">
-⬅
-</a>
-
-<strong>{{ data_selectata }}</strong>
-
-<a class="btn btn-secondary"
-href="{{ url_for('pontaj', data=data_selectata, action='next') }}">
-➡
-</a>
+<form method="GET">
+    <a href="{{ url_for('pontaj', data=data_selectata, action='prev') }}">⬅</a>
+    {{ data_selectata }}
+    <a href="{{ url_for('pontaj', data=data_selectata, action='next') }}">➡</a>
+</form>
 
 <form method="POST">
 
-<table class="table table-bordered mt-3">
+<table class="table table-bordered">
 
 <tr>
-
 <th>Muncitor</th>
 <th>Start1</th>
 <th>Stop1</th>
 <th>Start2</th>
 <th>Stop2</th>
 <th>Tip zi</th>
-<th>Observații</th>
-
+<th>Observatii</th>
 </tr>
 
 {% for m in muncitori %}
@@ -40,46 +32,40 @@ href="{{ url_for('pontaj', data=data_selectata, action='next') }}">
 
 <td>
 <input type="time"
-name="start1_{{ m.id }}"
+name="start1_{{m.id}}"
 value="{{ pontaje[m.id].start1 if m.id in pontaje else '' }}">
 </td>
 
 <td>
 <input type="time"
-name="stop1_{{ m.id }}"
+name="stop1_{{m.id}}"
 value="{{ pontaje[m.id].stop1 if m.id in pontaje else '' }}">
 </td>
 
 <td>
 <input type="time"
-name="start2_{{ m.id }}"
+name="start2_{{m.id}}"
 value="{{ pontaje[m.id].start2 if m.id in pontaje else '' }}">
 </td>
 
 <td>
 <input type="time"
-name="stop2_{{ m.id }}"
+name="stop2_{{m.id}}"
 value="{{ pontaje[m.id].stop2 if m.id in pontaje else '' }}">
 </td>
 
 <td>
-
-<select name="tip_{{ m.id }}">
-
+<select name="tip_{{m.id}}">
 <option value="Lucru">Lucru</option>
 <option value="Concediu">Concediu</option>
-<option value="Boala">Boală</option>
+<option value="Boala">Boala</option>
 <option value="Liber">Liber</option>
-
 </select>
-
 </td>
 
 <td>
-
-<input name="obs_{{ m.id }}"
+<input name="obs_{{m.id}}"
 value="{{ pontaje[m.id].observatii if m.id in pontaje else '' }}">
-
 </td>
 
 </tr>
@@ -88,13 +74,17 @@ value="{{ pontaje[m.id].observatii if m.id in pontaje else '' }}">
 
 </table>
 
-<button class="btn btn-success">Salvează pontaj</button>
+<button class="btn btn-success">Salveaza pontaj</button>
 
 </form>
 
 <hr>
 
-Total ore zi: {{ total_ore_zi }} <br>
-Total plată zi: {{ total_plata_zi }} lei
+<b>Total ore zi:</b> {{ total_ore_zi }} <br>
+<b>Total plata zi:</b> {{ total_plata_zi }} lei
 
+<<<<<<< HEAD
 {% endblock %}
+=======
+{% endblock %}
+>>>>>>> 5c5a52f7029eeea6985f9502db858c27af85d6c2

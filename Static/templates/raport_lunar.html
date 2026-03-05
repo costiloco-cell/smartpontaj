@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Raport Lunar</h2>
+
+<form method="GET" class="mb-3">
+    <input type="month" name="luna" value="{{ luna }}">
+    <button class="btn btn-primary">Vezi</button>
+</form>
+
+<a href="{{ url_for('export_lunar', luna=luna) }}"
+   class="btn btn-success mb-3">Export Excel</a>
+
+<table class="table table-bordered">
+    <tr>
+        <th>Muncitor</th>
+        <th>Total Ore</th>
+        <th>Total Plată</th>
+    </tr>
+    {% for r in rezultate %}
+    <tr>
+        <td>{{ r[0] }}</td>
+        <td>{{ r[1] or 0 }}</td>
+        <td>{{ r[2] or 0 }} lei</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

@@ -1,125 +1,71 @@
 {% extends "base.html" %}
+
 {% block content %}
-
-<form method="GET" class="row mb-4">
-
-    <div class="col-md-4">
-        <label>Lună</label>
-        <input type="month" name="luna" value="{{ luna }}" class="form-control">
-    </div>
-
-    <div class="col-md-4">
-        <label>Angajat</label>
-        <select name="muncitor" class="form-control">
-            <option value="">Toți</option>
-            {% for m in muncitori %}
-            <option value="{{ m.id }}"
-               {% if muncitor_selectat == m.id %}selected{% endif %}>
-                {{ m.nume }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-
-    <div class="col-md-4 d-flex align-items-end">
-        <button class="btn btn-primary w-100">Filtrează</button>
-    </div>
-
-</form>
 
 <h2>Dashboard</h2>
 
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card p-3 shadow">
-            <h4>Total Ore</h4>
-            <h2>{{ total_ore }}</h2>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card p-3 shadow">
-            <h4>Total Plată</h4>
-            <h2>{{ total_plata }} lei</h2>
-        </div>
-    </div>
-</div>
+<form method="GET">
 
-<div class="card p-4 shadow">
-    <h4>Ore pe zile (luna curentă)</h4>
-    <canvas id="oreChart"></canvas>
-</div>
+<label>Luna</label>
 
-<div class="card p-4 shadow mt-4">
-    <h4>Plăți pe zile (luna curentă)</h4>
-    <canvas id="plataChart"></canvas>
-</div>
+<input type="month" name="luna" value="{{ luna }}">
 
-{% if muncitor_selectat %}
-<a href="{{ url_for('fluturas', luna=luna, muncitor=muncitor_selectat) }}"
-   class="btn btn-success mt-3">
-   Generează Fluturaș PDF
-</a>
+<select name="muncitor">
 
-<a href="{{ url_for('export_lunar', luna=luna) }}"
-class="btn btn-success">
-Export Excel
-</a>
-{% endif %}
+<option value="">Toți muncitorii</option>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% for m in muncitori %}
+
+<option value="{{ m.id }}"
+{% if muncitor_selectat == m.id %}selected{% endif %}>
+{{ m.nume }}
+</option>
+
+{% endfor %}
+
+</select>
+
+<button class="btn btn-primary">Filtrează</button>
+
+</form>
+
+<hr>
+
+<h4>Total ore: {{ total_ore }}</h4>
+<h4>Total plată: {{ total_plata }} lei</h4>
+
+<h5>Luna anterioară:</h5>
+
+Ore: {{ ore_anterior }} <br>
+Plată: {{ plata_anterior }} lei <br>
+
+Diferență: {{ diferenta_proc }} %
+
+<hr>
+
+<canvas id="graficOre"></canvas>
 
 <script>
-const ctx = document.getElementById('oreChart');
+
+const ctx = document.getElementById('graficOre');
 
 new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: {{ zile | tojson }},
-        datasets: [{
-            label: 'Ore lucrate',
-            data: {{ ore_pe_zi | tojson }},
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: {
-                display: true
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    }
-});
-</script>
 
-<script>
-const ctxPlata = document.getElementById('plataChart');
+type: 'bar',
 
-new Chart(ctxPlata, {
-    type: 'line',
-    data: {
-        labels: {{ zile | tojson }},
-        datasets: [{
-            label: 'Plată zilnică (lei)',
-            data: {{ plata_pe_zi | tojson }},
-            borderWidth: 2,
-            tension: 0.3
-        }]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    }
+data: {
+
+labels: {{ zile|tojson }},
+
+datasets: [{
+label: 'Ore lucrate',
+data: {{ ore_pe_zi|tojson }}
+}]
+
+}
+
 });
+
 </script>
 
 {% endblock %}
