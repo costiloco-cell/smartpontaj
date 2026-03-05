@@ -55,16 +55,24 @@ box-shadow:0 3px 10px rgba(0,0,0,0.08);
 
 <h4>SmartPontaj</h4>
 
-<hr>
+<nav>
 
 <a href="{{ url_for('dashboard') }}">📊 Dashboard</a>
 <a href="{{ url_for('pontaj') }}">🕒 Pontaj</a>
+
+{% if current_user.role == "admin" %}
+
 <a href="{{ url_for('muncitori') }}">👷 Muncitori</a>
 <a href="{{ url_for('raport_lunar') }}">📅 Raport lunar</a>
 <a href="{{ url_for('fluturas') }}">💰 Fluturaș</a>
-<a href="{{ url_for('admin') }}">⚙ Admin</a>
+<a href="{{ url_for('admin') }}">Admin</a>
 
-<hr>
+{% endif %}
+
+<a href="{{ url_for('schimba_parola') }}">Schimbă parola</a>
+<a href="{{ url_for('logout') }}">Logout</a>
+
+</nav>
 
 <a href="{{ url_for('logout') }}">Logout</a>
 

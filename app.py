@@ -134,6 +134,46 @@ def logout():
 
     return redirect(url_for("login"))
 
+# ADMIN
+
+@app.route("/admin")
+@login_required
+def admin():
+
+    if current_user.role != "admin":
+        flash("Acces interzis")
+        return redirect(url_for("dashboard"))
+
+    users = User.query.all()
+
+    return render_template("admin.html", users=users)
+
+# =====================================================
+# Schimbare parola
+# =====================================================
+
+@app.route("/schimba_parola", methods=["GET","POST"])
+@login_required
+def schimba_parola():
+
+    if request.method == "POST":
+
+        parola_veche = request.form["old"]
+        parola_noua = request.form["new"]
+
+        if not check_password_hash(current_user.password, parola_veche):
+            flash("Parola veche incorecta")
+            return redirect(url_for("schimba_parola"))
+
+        current_user.password = generate_password_hash(parola_noua)
+
+        db.session.commit()
+
+        flash("Parola schimbata")
+
+        return redirect(url_for("dashboard"))
+
+    return render_template("schimba_parola.html")
 
 # =====================================================
 # DASHBOARD

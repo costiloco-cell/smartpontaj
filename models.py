@@ -13,6 +13,8 @@ class User(UserMixin, db.Model):
 
     role = db.Column(db.String(20), default="user")
 
+    created = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 class Muncitor(db.Model):
 
