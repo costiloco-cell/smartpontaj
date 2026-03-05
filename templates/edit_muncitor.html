@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Editare muncitor</h2>
+
+<form method="POST">
+
+<label>Nume</label>
+<input name="nume" value="{{ muncitor.nume }}">
+
+<label>Tarif oră</label>
+<input name="tarif" value="{{ muncitor.tarif_ora }}">
+
+<button class="btn btn-success">Salvează</button>
+
+</form>
+
+{% endblock %}
