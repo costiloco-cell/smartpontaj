@@ -22,133 +22,64 @@ Ziua următoare ➡
 
 <form method="POST">
 
-<div class="card shadow-sm">
+{% for m in muncitori %}
+
+<div class="card mb-3">
 
 <div class="card-body">
 
-<table class="table table-bordered table-hover align-middle">
+<h5>{{ m.nume }}</h5>
 
-<thead class="table-dark">
+<div class="row">
 
-<tr>
-<th>Muncitor</th>
-<th>Start1</th>
-<th>Stop1</th>
-<th>Start2</th>
-<th>Stop2</th>
-<th>Tip zi</th>
-<th>Total ore</th>
-<th>Plată estimată</th>
-<th>Observații</th>
-</tr>
-
-</thead>
-
-<tbody>
-
-{% for m in muncitori %}
-
-<tr id="row_{{m.id}}" data-tarif="{{m.tarif_ora}}">
-
-<td class="fw-bold">{{ m.nume }}</td>
-
-<td>
+<div class="col-6">
+<label>Start</label>
 <input type="time"
-id="start1_{{m.id}}"
-name="start1_{{m.id}}"
-class="form-control"
-value="{{ pontaje[m.id].start1 if m.id in pontaje else '' }}"
-onchange="calc({{m.id}})">
-</td>
+name="start1_{{ m.id }}"
+class="form-control">
+</div>
 
-<td>
+<div class="col-6">
+<label>Stop</label>
 <input type="time"
-id="stop1_{{m.id}}"
-name="stop1_{{m.id}}"
-class="form-control"
-value="{{ pontaje[m.id].stop1 if m.id in pontaje else '' }}"
-onchange="calc({{m.id}})">
-</td>
+name="stop1_{{ m.id }}"
+class="form-control">
+</div>
 
-<td>
+</div>
+
+<div class="row mt-2">
+
+<div class="col-6">
+<label>Pauză Start</label>
 <input type="time"
-id="start2_{{m.id}}"
-name="start2_{{m.id}}"
-class="form-control"
-value="{{ pontaje[m.id].start2 if m.id in pontaje else '' }}"
-onchange="calc({{m.id}})">
-</td>
+name="start2_{{ m.id }}"
+class="form-control">
+</div>
 
-<td>
+<div class="col-6">
+<label>Pauză Stop</label>
 <input type="time"
-id="stop2_{{m.id}}"
-name="stop2_{{m.id}}"
-class="form-control"
-value="{{ pontaje[m.id].stop2 if m.id in pontaje else '' }}"
-onchange="calc({{m.id}})">
-</td>
+name="stop2_{{ m.id }}"
+class="form-control">
+</div>
 
-<td>
+</div>
 
-<select class="form-select" name="tip_{{m.id}}">
+<label class="mt-2">Observații</label>
 
-<option value="Lucru">Lucru</option>
+<input name="obs_{{ m.id }}"
+class="form-control">
 
-<option value="Concediu"
-{% if m.id in pontaje and pontaje[m.id].tip_zi=="Concediu" %}selected{% endif %}>
-Concediu
-</option>
+</div>
 
-<option value="Boala"
-{% if m.id in pontaje and pontaje[m.id].tip_zi=="Boala" %}selected{% endif %}>
-Boală
-</option>
-
-<option value="Liber"
-{% if m.id in pontaje and pontaje[m.id].tip_zi=="Liber" %}selected{% endif %}>
-Liber
-</option>
-
-</select>
-
-</td>
-
-<td>
-<span id="ore_{{m.id}}">
-{{ pontaje[m.id].ore if m.id in pontaje else 0 }}
-</span>
-</td>
-
-<td>
-<span id="plata_{{m.id}}">
-{{ pontaje[m.id].plata if m.id in pontaje else 0 }}
-</span>
-</td>
-
-<td>
-
-<input class="form-control"
-name="obs_{{m.id}}"
-placeholder="Observații..."
-value="{{ pontaje[m.id].observatii if m.id in pontaje else '' }}">
-
-</td>
-
-</tr>
+</div>
 
 {% endfor %}
 
-</tbody>
+<button class="btn btn-success w-100">Salvează pontaj</button>
 
-</table>
-
-</div>
-
-</div>
-
-<button class="btn btn-success mt-3">
-💾 Salvează pontaj
-</button>
+</form>
 
 </form>
 

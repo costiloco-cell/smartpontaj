@@ -48,9 +48,30 @@ login_manager.session_protection = "strong"
 
 
 @login_manager.user_loader
+
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+def role_required(*roles):
+
+    def wrapper(view):
+
+        @login_required
+        def wrapped_view(*args, **kwargs):
+
+            if current_user.role not in roles:
+
+                flash("Acces interzis")
+
+                return redirect(url_for("dashboard"))
+
+            return view(*args, **kwargs)
+
+        wrapped_view.__name__ = view.__name__
+
+        return wrapped_view
+
+    return wrapper
 
 # =====================================================
 # CREATE ADMIN
@@ -137,7 +158,7 @@ def logout():
 # ADMIN
 
 @app.route("/admin", methods=["GET", "POST"])
-@login_required
+@role_required("admin")
 def admin():
 
     if current_user.role != "admin":
@@ -350,7 +371,7 @@ def pontaj():
 # =====================================================
 
 @app.route("/muncitori", methods=["GET", "POST"])
-@login_required
+@role_required("admin")
 def muncitori():
 
     if current_user.role != "admin":
@@ -391,7 +412,7 @@ def muncitori():
 # =====================================================
 
 @app.route("/edit_muncitor/<int:id>", methods=["GET", "POST"])
-@login_required
+@role_required("admin")
 def edit_muncitor(id):
 
     if current_user.role != "admin":
@@ -422,7 +443,7 @@ def edit_muncitor(id):
 # =====================================================
 
 @app.route("/delete_muncitor/<int:id>")
-@login_required
+@role_required("admin")
 def delete_muncitor(id):
 
     if current_user.role != "admin":
@@ -443,7 +464,7 @@ def delete_muncitor(id):
 # =====================================================
 
 @app.route("/raport_lunar")
-@login_required
+@role_required("admin","manager")
 def raport_lunar():
 
     luna = request.args.get("luna")
@@ -475,7 +496,7 @@ def raport_lunar():
 # =====================================================
 
 @app.route("/export_lunar")
-@login_required
+@role_required("admin","manager")
 def export_lunar():
 
     luna = request.args.get("luna")
@@ -511,7 +532,7 @@ def export_lunar():
 # =====================================================
 
 @app.route("/fluturas")
-@login_required
+@role_required("admin","manager")
 def fluturas():
 
     luna = request.args.get("luna")
