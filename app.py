@@ -17,6 +17,31 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
 
+# ore calendar
+
+def calculeaza_ore_python(s1, e1, s2, e2):
+    total_ore = 0
+    fmt = "%H:%M"
+    
+    # Perechea 1 (Program principal)
+    if s1 and e1:
+        try:
+            t1 = datetime.strptime(s1, fmt)
+            t2 = datetime.strptime(e1, fmt)
+            if t2 < t1: t2 += timedelta(days=1) # Gestionează tura de noapte
+            total_ore += (t2 - t1).total_seconds() / 3600
+        except ValueError: pass
+
+    # Perechea 2 (Pauză sau Ore Extra)
+    if s2 and e2:
+        try:
+            t3 = datetime.strptime(s2, fmt)
+            t4 = datetime.strptime(e2, fmt)
+            if t4 < t3: t4 += timedelta(days=1)
+            total_ore += (t4 - t3).total_seconds() / 3600
+        except ValueError: pass
+        
+    return round(total_ore, 2)
 
 # =====================================================
 # CONFIG
@@ -282,91 +307,70 @@ def dashboard():
 @app.route("/pontaj", methods=["GET", "POST"])
 @login_required
 def pontaj():
+    data_str = request.args.get("data")
+    action = request.args.get("action")
 
-    data_selectata = request.args.get("data")
+    # Stabilim data curentă de lucru
+    if data_str:
+        try:
+            dt = datetime.strptime(data_str, "%Y-%m-%d")
+        except:
+            dt = datetime.now()
+    else:
+        dt = datetime.now()
 
-    if not data_selectata:
-        data_selectata = datetime.now().strftime("%Y-%m-%d")
+    # Logica butoanelor de navigare
+    if action == "prev":
+        dt -= timedelta(days=1)
+    elif action == "next":
+        dt += timedelta(days=1)
 
-    muncitori = Muncitor.query.all()
-
-    pontaje_existente = {
-        p.muncitor_id: p
-        for p in Pontaj.query.filter_by(data=data_selectata).all()
-    }
-
-    def calc_interval(start, stop):
-
-        if not start or not stop:
-            return 0
-
-        t1 = datetime.strptime(start, "%H:%M")
-        t2 = datetime.strptime(stop, "%H:%M")
-
-        if t2 < t1:
-            t2 += timedelta(days=1)
-
-        return (t2 - t1).total_seconds() / 3600
+    data_selectata = dt.strftime("%Y-%m-%d")
 
     if request.method == "POST":
-
+        muncitori = Muncitor.query.all()
         for m in muncitori:
+            # Preluăm datele din formular
+            s1 = request.form.get(f"start1_{m.id}")
+            e1 = request.form.get(f"stop1_{m.id}")
+            s2 = request.form.get(f"start2_{m.id}")
+            e2 = request.form.get(f"stop2_{m.id}")
+            
+           # Calculăm orele folosind funcția de mai sus
+            ore_lucrate = calculeaza_ore_python(s1, e1, s2, e2)
+            plata_calculata = ore_lucrate * m.tarif_ora
 
-            start1 = request.form.get(f"start1_{m.id}")
-            stop1 = request.form.get(f"stop1_{m.id}")
-
-            start2 = request.form.get(f"start2_{m.id}")
-            stop2 = request.form.get(f"stop2_{m.id}")
-
-            tip_zi = request.form.get(f"tip_{m.id}")
-            observatii = request.form.get(f"obs_{m.id}")
-
-            ore = calc_interval(start1, stop1) + calc_interval(start2, stop2)
-
-            if tip_zi == "Concediu":
-                ore = 8
-
-            plata = ore * m.tarif_ora
-
-            existent = pontaje_existente.get(m.id)
+            # Verificăm dacă există deja înregistrare
+            existent = Pontaj.query.filter_by(muncitor_id=m.id, data=data_selectata).first()
 
             if existent:
-
-                existent.start1 = start1
-                existent.stop1 = stop1
-                existent.start2 = start2
-                existent.stop2 = stop2
-                existent.ore = ore
-                existent.plata = plata
-                existent.observatii = observatii
-
+                existent.start1, existent.stop1 = s1, e1
+                existent.start2, existent.stop2 = s2, e2
+                existent.ore = ore_lucrate
+                existent.plata = plata_calculata
             else:
-
                 nou = Pontaj(
                     data=data_selectata,
                     muncitor_id=m.id,
-                    start1=start1,
-                    stop1=stop1,
-                    start2=start2,
-                    stop2=stop2,
-                    ore=ore,
-                    plata=plata,
-                    observatii=observatii
+                    start1=s1, stop1=e1,
+                    start2=s2, stop2=e2,
+                    ore=ore_lucrate,
+                    plata=plata_calculata
                 )
-
                 db.session.add(nou)
-
+        
         db.session.commit()
+        flash(f"Salvat cu succes pentru {data_selectata}!")
+        return redirect(url_for('pontaj', data=data_selectata))
 
-        return redirect(url_for("pontaj", data=data_selectata))
-
-    return render_template(
-        "pontaj.html",
-        muncitori=muncitori,
-        data_selectata=data_selectata,
-        pontaje=pontaje_existente
-    )
-
+    # Încărcăm muncitorii și pontajele lor pentru a le afișa în HTML
+    muncitori = Muncitor.query.all()
+    pontaje_zi = {p.muncitor_id: p for p in Pontaj.query.filter_by(data=data_selectata).all()}
+    
+    return render_template("pontaj.html", 
+                           muncitori=muncitori, 
+                           data_selectata=data_selectata, 
+                           pontaje=pontaje_zi)
 
 # =====================================================
 # MUNCITORI - LISTA + ADAUGARE

@@ -20,6 +20,20 @@ Ziua următoare ➡
 
 </div>
 
+{% set p = pontaje.get(m.id) %}
+<div class="row">
+    <div class="col-6">
+        <label>Start</label>
+        <input type="time" name="start1_{{ m.id }}" class="form-control" 
+               value="{{ p.start1 if p else '' }}" onchange="calc('{{ m.id }}')">
+    </div>
+    <div class="col-6">
+        <label>Stop</label>
+        <input type="time" name="stop1_{{ m.id }}" class="form-control" 
+               value="{{ p.stop1 if p else '' }}" onchange="calc('{{ m.id }}')">
+    </div>
+</div>
+
 <form method="POST">
 
 {% for m in muncitori %}
@@ -78,6 +92,15 @@ class="form-control">
 {% endfor %}
 
 <button class="btn btn-success w-100">Salvează pontaj</button>
+
+<div class="d-flex align-items-center">
+    <a class="btn btn-primary" href="{{ url_for('pontaj', data=data_selectata, action='prev') }}">⬅</a>
+    
+    <input type="date" class="form-control mx-2" value="{{ data_selectata }}"
+           onchange="window.location.href='/pontaj?data='+this.value">
+           
+    <a class="btn btn-primary" href="{{ url_for('pontaj', data=data_selectata, action='next') }}">➡</a>
+</div>
 
 </form>
 
