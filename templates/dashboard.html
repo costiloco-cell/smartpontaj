@@ -1,114 +1,80 @@
 {% extends "base.html" %}
 
 {% block content %}
+<h2 class="mb-4">📊 Dashboard</h2>
 
-<h2>Dashboard</h2>
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card p-3 border-start border-primary border-4 shadow-sm">
+            <h6 class="text-muted small uppercase">Total Ore Lună</h6>
+            <h2 class="mb-0">{{ total_ore }} h</h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 border-start border-success border-4 shadow-sm">
+            <h6 class="text-muted small uppercase">Total Plată Estimată</h6>
+            <h2 class="mb-0 text-success">{{ total_plata }} lei</h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 border-start border-warning border-4 shadow-sm">
+            <h6 class="text-muted small uppercase">Diferență vs Luna Trecută</h6>
+            <h2 class="mb-0">{{ diferenta_proc }}%</h2>
+        </div>
+    </div>
+</div>
 
-<form method="GET">
+<div class="card p-3 shadow-sm mb-4">
+    <form method="GET" class="row g-2 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label small fw-bold">Selectează Luna</label>
+            <input type="month" name="luna" class="form-control" value="{{ luna }}">
+        </div>
+        <div class="col-md-5">
+            <label class="form-label small fw-bold">Filtru Muncitor</label>
+            <select name="muncitor" class="form-select">
+                <option value="">Toți</option>
+                {% for m in muncitori %}
+                <option value="{{ m.id }}" {% if muncitor_selectat == m.id %}selected{% endif %}>{{ m.nume }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100">🔍 Filtrează</button>
+        </div>
+    </form>
+</div>
 
-<label>Luna</label>
-
-<input type="month" name="luna" value="{{ luna }}">
-
-<select name="muncitor">
-
-<option value="">Toți muncitorii</option>
-
-{% for m in muncitori %}
-
-<option value="{{ m.id }}"
-{% if muncitor_selectat == m.id %}selected{% endif %}>
-{{ m.nume }}
-</option>
-
-{% endfor %}
-
-</select>
-
-<button class="btn btn-primary">Filtrează</button>
-
-</form>
-
-<hr>
-
-<h4>Total ore: {{ total_ore }}</h4>
-<h4>Total plată: {{ total_plata }} lei</h4>
-
-<h5>Luna anterioară:</h5>
-
-Ore: {{ ore_anterior }} <br>
-Plată: {{ plata_anterior }} lei <br>
-
-Diferență: {{ diferenta_proc }} %
-
-<hr>
-
-<canvas id="graficOre"></canvas>
-
-<script>
-
-<div class="card p-3 shadow-sm mt-4">
-    <h5>Evoluție Ore</h5>
-    <div style="position: relative; height:300px;">
+<div class="card p-4 shadow-sm">
+    <h5 class="card-title mb-3">📈 Evoluție Ore Lucrate</h5>
+    <div style="height: 300px;">
         <canvas id="graficOre"></canvas>
     </div>
 </div>
 
-<div class="row">
-
-<div class="col-md-4">
-
-<div class="card p-3">
-
-<h5>Total ore</h5>
-<h2>{{ total_ore }}</h2>
-
-</div>
-
-</div>
-
-<div class="col-md-4">
-
-<div class="card p-3">
-
-<h5>Total plată</h5>
-<h2>{{ total_plata }} lei</h2>
-
-</div>
-
-</div>
-
-<div class="col-md-4">
-
-<div class="card p-3">
-
-<h5>Diferență</h5>
-<h2>{{ diferenta_proc }} %</h2>
-
-</div>
-
-</div>
-
-</div>
-const ctx = document.getElementById('graficOre');
-
-new Chart(ctx, {
-
-type: 'bar',
-
-data: {
-
-labels: {{ zile|tojson }},
-
-datasets: [{
-label: 'Ore lucrate',
-data: {{ ore_pe_zi|tojson }}
-}]
-
-}
-
-});
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('graficOre').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ zile | tojson if zile else [] }},
+                datasets: [{
+                    label: 'Ore Lucrate',
+                    data: {{ valori_ore | tojson if valori_ore else [] }},
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    });
 </script>
-
 {% endblock %}
