@@ -571,6 +571,9 @@ def fluturas():
 # =====================================================
 
 if __name__ == "__main__":
-    # Get port from environment variable, default to 5000 for local dev
-    port = int(os.environ.get("PORT", 10000))
+    # Citim portul din variabilele de mediu oferite de Render
+    # Dacă rulăm local, va folosi portul 5000 implicit
+    port = int(os.environ.get("PORT", 5000))
+    
+    # Este CRITICAL să folosim host="0.0.0.0" pentru a accepta conexiuni externe
     app.run(host="0.0.0.0", port=port)
