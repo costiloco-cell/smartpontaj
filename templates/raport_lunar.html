@@ -1,44 +1,41 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">📋 Raport Lunar</h2>
+    <button class="btn btn-outline-dark btn-sm" onclick="window.print()">
+        🖨️ Printează PDF
+    </button>
+</div>
 
-<h2>Raport lunar</h2>
-
-<form>
-
-<input type="month" name="luna" value="{{ luna }}">
-
-<button class="btn btn-primary">Vezi</button>
-
-</form>
-
-<a class="btn btn-success"
-href="{{ url_for('export_lunar', luna=luna) }}">
-Export Excel
-</a>
-
-<table class="table mt-3">
-
-<tr>
-
-<th>Muncitor</th>
-<th>Total ore</th>
-<th>Total plată</th>
-
-</tr>
-
-{% for r in rezultate %}
-
-<tr>
-
-<td>{{ r[0] }}</td>
-<td>{{ r[1] }}</td>
-<td>{{ r[2] }} lei</td>
-
-</tr>
-
-{% endfor %}
-
-</table>
-
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Muncitor</th>
+                        <th>Ore Lucrate</th>
+                        <th>Tarif/h</th>
+                        <th>Total Plată</th>
+                        <th class="text-end">Acțiuni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in rapoarte %}
+                    <tr>
+                        <td><strong>{{ r.nume }}</strong></td>
+                        <td>{{ r.ore }} h</td>
+                        <td>{{ r.tarif }} lei</td>
+                        <td class="text-success fw-bold">{{ r.total }} lei</td>
+                        <td class="text-end">
+                            <a href="/fluturas/{{ r.id }}" class="btn btn-sm btn-primary">Vezi Fluturaș</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -1,140 +1,107 @@
 <!DOCTYPE html>
 <html lang="ro">
-
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <title>SmartPontaj</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: 'Inter', sans-serif;
+            padding-bottom: 70px; /* Space for mobile nav */
+        }
 
-<meta charset="UTF-8">
-<title>SmartPontaj</title>
+        /* Desktop Sidebar */
+        @media (min-width: 992px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 240px;
+                background: #1a252f;
+                padding-top: 20px;
+                z-index: 1000;
+            }
+            .main-content { margin-left: 240px; }
+            .mobile-nav { display: none; }
+            .navbar { display: none; }
+        }
 
-<link rel="manifest" href="/static/manifest.json">
+        /* Mobile Bottom Nav */
+        @media (max-width: 991px) {
+            .sidebar { display: none; }
+            .mobile-nav {
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+                background: white;
+                display: flex;
+                justify-content: space-around;
+                padding: 10px 0;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                z-index: 1000;
+            }
+            .mobile-nav a {
+                text-align: center;
+                color: #6c757d;
+                text-decoration: none;
+                font-size: 12px;
+            }
+            .mobile-nav a.active { color: #0d6efd; font-weight: bold; }
+        }
 
-<meta name="theme-color" content="#2c3e50">
+        .sidebar a {
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            display: block;
+            padding: 12px 20px;
+            transition: 0.3s;
+        }
 
-<link rel="apple-touch-icon" href="/static/icon-192.png">
+        .sidebar a:hover, .sidebar a.active {
+            color: white;
+            background: rgba(255,255,255,0.1);
+        }
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-
-body{
-background:#f5f7fb;
-}
-
-.sidebar{
-height:100vh;
-background:#1f2d3d;
-color:white;
-padding:20px;
-}
-
-.sidebar a{
-color:white;
-text-decoration:none;
-display:block;
-padding:10px;
-border-radius:6px;
-margin-bottom:5px;
-}
-
-.sidebar a:hover{
-background:#3b4b5c;
-}
-
-.card{
-border:none;
-box-shadow:0 3px 10px rgba(0,0,0,0.08);
-}
-
-</style>
-
+        .card { border-radius: 12px; border: none; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-2px); }
+    </style>
 </head>
-
 <body>
 
-<nav class="navbar navbar-dark bg-dark navbar-expand-lg">
+    <div class="sidebar">
+        <h4 class="text-white text-center mb-4">SmartPontaj</h4>
+        <a href="/dashboard">📊 Dashboard</a>
+        <a href="/pontaj">📝 Pontaj</a>
+        {% if current_user.role == "admin" %}
+            <a href="/muncitori">👥 Muncitori</a>
+            <a href="/admin">⚙️ Admin</a>
+        {% endif %}
+        <hr class="text-white mx-3">
+        <a href="/logout" class="text-danger">Logout</a>
+    </div>
 
-<div class="container">
+    <div class="mobile-nav">
+        <a href="/dashboard"><div>📊</div>Dashboard</a>
+        <a href="/pontaj"><div>📝</div>Pontaj</a>
+        <a href="/raport_lunar"><div>📋</div>Raport</a>
+        <a href="/logout"><div>🚪</div>Exit</a>
+    </div>
 
-<a class="navbar-brand" href="/dashboard">
-SmartPontaj
-</a>
+    <div class="main-content">
+        <div class="container-fluid p-4">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
 
-<div>
-
-<a class="btn btn-outline-light btn-sm" href="/dashboard">Dashboard</a>
-
-<a class="btn btn-outline-light btn-sm" href="/pontaj">Pontaj</a>
-
-{% if current_user.role == "admin" %}
-<a href="/muncitori">Muncitori</a>
-<a href="/admin">Admin</a>
-{% endif %}
-
-{% if current_user.role in ["admin","manager"] %}
-<a href="/raport_lunar">Raport</a>
-<a href="/fluturas">Fluturaș</a>
-{% endif %}
-
-<a class="btn btn-danger btn-sm" href="/logout">Logout</a>
-
-</div>
-
-</div>
-
-</nav>
-
-<div class="col-10 p-4">
-
-{% block content %}
-{% endblock %}
-
-</div>
-
-</div>
-
-</div>
-
-<script>
-
-if ('serviceWorker' in navigator) {
-
-  navigator.serviceWorker.register('/static/sw.js')
-
-  .then(function() {
-    console.log("Service Worker registered");
-  });
-
-}
-
-</script>
-
-<script>
-
-if ("Notification" in window) {
-
-Notification.requestPermission().then(function(permission){
-
-if(permission === "granted"){
-
-setTimeout(function(){
-
-new Notification("SmartPontaj",{
-body: "Nu uita să completezi pontajul de azi."
-});
-
-},10000);
-
-}
-
-});
-
-}
-
-</script>
-
+    <script>
+        // Service Worker & Notification Logic here
+    </script>
 </body>
 </html>

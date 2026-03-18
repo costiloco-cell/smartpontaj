@@ -1,29 +1,58 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="container d-flex justify-content-center">
+    <div class="card shadow-lg border-0" style="max-width: 500px; width: 100%;">
+        <div class="card-body p-4">
+            <div class="text-center mb-4">
+                <h4 class="fw-bold mb-1">SmartPontaj</h4>
+                <p class="text-muted small">Fluturaș de Salariu - {{ luna }}</p>
+            </div>
 
-<h2>Fluturaș salariu</h2>
+            <div class="border-top border-bottom py-3 mb-3">
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Angajat:</span>
+                    <span class="fw-bold">{{ nume_muncitor }}</span>
+                </div>
+            </div>
 
-<form>
+            <div class="mb-2 d-flex justify-content-between">
+                <span>Total Ore Lucrate</span>
+                <span>{{ total_ore }} h</span>
+            </div>
+            <div class="mb-2 d-flex justify-content-between">
+                <span>Tarif Orar</span>
+                <span>{{ tarif }} lei/h</span>
+            </div>
+            
+            <hr class="dashed">
 
-<label>Luna</label>
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <h5 class="mb-0">TOTAL DE PLATĂ</h5>
+                <h4 class="text-primary mb-0">{{ total_plata }} lei</h4>
+            </div>
 
-<input type="month" name="luna">
+            <div class="mt-5 text-center d-print-none">
+                <button class="btn btn-dark w-100 mb-2" onclick="window.print()">Descarcă PDF</button>
+                <a href="/raport_lunar" class="text-muted small">Înapoi la listă</a>
+            </div>
+        </div>
+    </div>
+</div>
 
-<label>Muncitor</label>
-
-<select name="muncitor">
-
-{% for m in muncitori %}
-
-<option value="{{ m.id }}">{{ m.nume }}</option>
-
-{% endfor %}
-
-</select>
-
-<button class="btn btn-primary">Generează PDF</button>
-
-</form>
-
+<style>
+    /* Styling for the "Receipt" look */
+    .dashed {
+        border-top: 2px dashed #dee2e6;
+        background-color: transparent;
+    }
+    
+    @media print {
+        .sidebar, .mobile-nav, .btn, .text-muted {
+            display: none !important;
+        }
+        body { background: white; }
+        .card { border: none !important; box-shadow: none !important; }
+    }
+</style>
 {% endblock %}
