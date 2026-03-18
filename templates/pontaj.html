@@ -11,9 +11,7 @@
 
 <form method="POST">
     {% for m in muncitori %}
-        {# IMPORTANT: Linia de mai jos trebuie să fie AICI, după 'for m in muncitori' #}
         {% set p = pontaje.get(m.id) %}
-        
         <div class="card mb-3 shadow-sm" id="row_{{ m.id }}" data-tarif="{{ m.tarif_ora }}">
             <div class="card-body">
                 <h5 class="text-primary">{{ m.nume }}</h5>
@@ -36,66 +34,31 @@
             </div>
         </div>
     {% endfor %}
-
     <button type="submit" class="btn btn-success w-100 py-3 sticky-bottom shadow">💾 Salvează Pontaj</button>
 </form>
 
 <script>
 function calc(id) {
-    // 1. Preluăm valorile din input-uri
     let s1 = document.getElementById("start1_" + id).value;
     let e1 = document.getElementById("stop1_" + id).value;
     let s2 = document.getElementById("start2_" + id).value;
     let e2 = document.getElementById("stop2_" + id).value;
-    
-    // 2. Preluăm tariful din atributul data al cardului
     let row = document.getElementById("row_" + id);
-    let tarif = parseFloat(row.getAttribute("data-tarif")) || 0;
+    let tarif = parseFloat(row.dataset.tarif);
 
-    // 3. Funcție internă pentru calculul diferenței de timp
     function diff(start, stop) {
         if (!start || !stop) return 0;
-        
         let s = start.split(":");
         let e = stop.split(":");
-        
         let d1 = new Date(0, 0, 0, s[0], s[1]);
         let d2 = new Date(0, 0, 0, e[0], e[1]);
-        
-        // Dacă ora de stop e mai mică decât start, înseamnă că a trecut de miezul nopții
         if (d2 < d1) d2.setDate(d2.getDate() + 1);
-        
-        return (d2 - d1) / 3600000; // Returnează orele ca număr zecimal
+        return (d2 - d1) / 3600000;
     }
 
-    // 4. Calculăm orele totale și plata pentru acest muncitor
-    let oreTotal = diff(s1, e1) + diff(s2, e2);
-    let plataTotal = oreTotal * tarif;
-
-    // 5. Actualizăm interfața pentru muncitorul respectiv
-    document.getElementById("ore_" + id).innerText = oreTotal.toFixed(2);
-    document.getElementById("plata_" + id).innerText = plataTotal.toFixed(2);
-
-    // 6. Recalculăm Totalul General pe zi (opțional, dacă ai elementele în pagină)
-    updateTotalGeneral();
-}
-
-function updateTotalGeneral() {
-    let oreElemente = document.querySelectorAll('[id^="ore_"]');
-    let plataElemente = document.querySelectorAll('[id^="plata_"]');
-    
-    let totalOre = 0;
-    let totalPlata = 0;
-
-    oreElemente.forEach(el => totalOre += parseFloat(el.innerText) || 0);
-    plataElemente.forEach(el => totalPlata += parseFloat(el.innerText) || 0);
-
-    // Actualizăm cardurile de sumar de la finalul paginii
-    if(document.getElementById("totalOreZi")) {
-        document.getElementById("totalOreZi").innerText = totalOre.toFixed(2) + " h";
-    }
-    if(document.getElementById("totalPlataZi")) {
-        document.getElementById("totalPlataZi").innerText = totalPlata.toFixed(2) + " lei";
-    }
+    let ore = diff(s1, e1) + diff(s2, e2);
+    document.getElementById("ore_" + id).innerText = ore.toFixed(2);
+    document.getElementById("plata_" + id).innerText = (ore * tarif).toFixed(2);
 }
 </script>
+{% endblock %}
