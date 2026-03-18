@@ -365,13 +365,12 @@ def pontaj():
 
     # Încărcăm muncitorii și pontajele lor pentru a le afișa în HTML
     muncitori = Muncitor.query.all()
-    pontaje_zi = {p.muncitor_id: p for p in Pontaj.query.filter_by(data=data_selectata).all()}
-    
-    return render_template("pontaj.html", 
-                           muncitori=muncitori, 
-                           data_selectata=data_selectata, 
-                           pontaje=pontaje_zi)
+   pontaje_zi = {p.muncitor_id: p for p in Pontaj.query.filter_by(data=data_selectata).all()}
 
+return render_template("pontaj.html", 
+                       muncitori=muncitori, 
+                       data_selectata=data_selectata, 
+                       pontaje=pontaje_zi) 
 # =====================================================
 # MUNCITORI - LISTA + ADAUGARE
 # =====================================================

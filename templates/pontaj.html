@@ -1,201 +1,101 @@
 {% extends "base.html" %}
 
 {% block content %}
-
 <h2 class="mb-3">Pontaj zilnic</h2>
 
-<div class="mb-3">
-
-<a class="btn btn-outline-secondary"
-href="{{ url_for('pontaj', data=data_selectata, action='prev') }}">
-⬅ Ziua anterioară
-</a>
-
-<strong class="mx-3 fs-5">{{ data_selectata }}</strong>
-
-<a class="btn btn-outline-secondary"
-href="{{ url_for('pontaj', data=data_selectata, action='next') }}">
-Ziua următoare ➡
-</a>
-
-</div>
-
-{% set p = pontaje.get(m.id) %}
-<div class="row">
-    <div class="col-6">
-        <label>Start</label>
-        <input type="time" name="start1_{{ m.id }}" class="form-control" 
-               value="{{ p.start1 if p else '' }}" onchange="calc('{{ m.id }}')">
-    </div>
-    <div class="col-6">
-        <label>Stop</label>
-        <input type="time" name="stop1_{{ m.id }}" class="form-control" 
-               value="{{ p.stop1 if p else '' }}" onchange="calc('{{ m.id }}')">
-    </div>
+<div class="mb-3 d-flex align-items-center">
+    <a class="btn btn-outline-primary" href="{{ url_for('pontaj', data=data_selectata, action='prev') }}">⬅</a>
+    <input type="date" class="form-control mx-2" style="width: auto;" value="{{ data_selectata }}" onchange="window.location.href='/pontaj?data='+this.value">
+    <a class="btn btn-outline-primary" href="{{ url_for('pontaj', data=data_selectata, action='next') }}">➡</a>
 </div>
 
 <form method="POST">
+    {% for m in muncitori %}
+        {# IMPORTANT: Linia de mai jos trebuie să fie AICI, după 'for m in muncitori' #}
+        {% set p = pontaje.get(m.id) %}
+        
+        <div class="card mb-3 shadow-sm" id="row_{{ m.id }}" data-tarif="{{ m.tarif_ora }}">
+            <div class="card-body">
+                <h5 class="text-primary">{{ m.nume }}</h5>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="small">Tura 1 (Start/Stop)</label>
+                        <input type="time" name="start1_{{ m.id }}" id="start1_{{ m.id }}" class="form-control" value="{{ p.start1 if p else '' }}" onchange="calc('{{ m.id }}')">
+                        <input type="time" name="stop1_{{ m.id }}" id="stop1_{{ m.id }}" class="form-control mt-1" value="{{ p.stop1 if p else '' }}" onchange="calc('{{ m.id }}')">
+                    </div>
+                    <div class="col-6">
+                        <label class="small">Tura 2 (Start/Stop)</label>
+                        <input type="time" name="start2_{{ m.id }}" id="start2_{{ m.id }}" class="form-control" value="{{ p.start2 if p else '' }}" onchange="calc('{{ m.id }}')">
+                        <input type="time" name="stop2_{{ m.id }}" id="stop2_{{ m.id }}" class="form-control mt-1" value="{{ p.stop2 if p else '' }}" onchange="calc('{{ m.id }}')">
+                    </div>
+                </div>
+                <div class="mt-2 p-2 bg-light rounded d-flex justify-content-between">
+                    <span>Ore: <strong id="ore_{{ m.id }}">{{ p.ore if p else '0.00' }}</strong></span>
+                    <span>Plată: <strong id="plata_{{ m.id }}">{{ p.plata if p else '0.00' }}</strong> lei</span>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
 
-{% for m in muncitori %}
-
-<div class="card mb-3">
-
-<div class="card-body">
-
-<h5>{{ m.nume }}</h5>
-
-<div class="row">
-
-<div class="col-6">
-<label>Start</label>
-<input type="time"
-name="start1_{{ m.id }}"
-class="form-control">
-</div>
-
-<div class="col-6">
-<label>Stop</label>
-<input type="time"
-name="stop1_{{ m.id }}"
-class="form-control">
-</div>
-
-</div>
-
-<div class="row mt-2">
-
-<div class="col-6">
-<label>Pauză Start</label>
-<input type="time"
-name="start2_{{ m.id }}"
-class="form-control">
-</div>
-
-<div class="col-6">
-<label>Pauză Stop</label>
-<input type="time"
-name="stop2_{{ m.id }}"
-class="form-control">
-</div>
-
-</div>
-
-<label class="mt-2">Observații</label>
-
-<input name="obs_{{ m.id }}"
-class="form-control">
-
-</div>
-
-</div>
-
-{% endfor %}
-
-<button class="btn btn-success w-100">Salvează pontaj</button>
-
-<div class="d-flex align-items-center">
-    <a class="btn btn-primary" href="{{ url_for('pontaj', data=data_selectata, action='prev') }}">⬅</a>
-    
-    <input type="date" class="form-control mx-2" value="{{ data_selectata }}"
-           onchange="window.location.href='/pontaj?data='+this.value">
-           
-    <a class="btn btn-primary" href="{{ url_for('pontaj', data=data_selectata, action='next') }}">➡</a>
-</div>
-
+    <button type="submit" class="btn btn-success w-100 py-3 sticky-bottom shadow">💾 Salvează Pontaj</button>
 </form>
-
-</form>
-
-<hr>
-
-<div class="row">
-
-<div class="col-md-6">
-
-<div class="card p-3">
-
-<h5>Total ore zi</h5>
-
-<h3 id="totalOreZi">{{ total_ore_zi }}</h3>
-
-</div>
-
-</div>
-
-<div class="col-md-6">
-
-<div class="card p-3">
-
-<h5>Total plată zi</h5>
-
-<h3 id="totalPlataZi">{{ total_plata_zi }} lei</h3>
-
-</div>
-
-</div>
-
-</div>
-
 
 <script>
+function calc(id) {
+    // 1. Preluăm valorile din input-uri
+    let s1 = document.getElementById("start1_" + id).value;
+    let e1 = document.getElementById("stop1_" + id).value;
+    let s2 = document.getElementById("start2_" + id).value;
+    let e2 = document.getElementById("stop2_" + id).value;
+    
+    // 2. Preluăm tariful din atributul data al cardului
+    let row = document.getElementById("row_" + id);
+    let tarif = parseFloat(row.getAttribute("data-tarif")) || 0;
 
-function calc(id){
+    // 3. Funcție internă pentru calculul diferenței de timp
+    function diff(start, stop) {
+        if (!start || !stop) return 0;
+        
+        let s = start.split(":");
+        let e = stop.split(":");
+        
+        let d1 = new Date(0, 0, 0, s[0], s[1]);
+        let d2 = new Date(0, 0, 0, e[0], e[1]);
+        
+        // Dacă ora de stop e mai mică decât start, înseamnă că a trecut de miezul nopții
+        if (d2 < d1) d2.setDate(d2.getDate() + 1);
+        
+        return (d2 - d1) / 3600000; // Returnează orele ca număr zecimal
+    }
 
-let start1 = document.getElementById("start1_"+id).value
-let stop1 = document.getElementById("stop1_"+id).value
+    // 4. Calculăm orele totale și plata pentru acest muncitor
+    let oreTotal = diff(s1, e1) + diff(s2, e2);
+    let plataTotal = oreTotal * tarif;
 
-let start2 = document.getElementById("start2_"+id).value
-let stop2 = document.getElementById("stop2_"+id).value
+    // 5. Actualizăm interfața pentru muncitorul respectiv
+    document.getElementById("ore_" + id).innerText = oreTotal.toFixed(2);
+    document.getElementById("plata_" + id).innerText = plataTotal.toFixed(2);
 
-let row = document.getElementById("row_"+id)
-let tarif = parseFloat(row.dataset.tarif)
-
-function diff(start,stop){
-
-if(!start || !stop) return 0
-
-let s = start.split(":")
-let e = stop.split(":")
-
-let d1 = new Date(0,0,0,s[0],s[1])
-let d2 = new Date(0,0,0,e[0],e[1])
-
-if(d2 < d1) d2.setDate(d2.getDate()+1)
-
-return (d2-d1)/3600000
-
+    // 6. Recalculăm Totalul General pe zi (opțional, dacă ai elementele în pagină)
+    updateTotalGeneral();
 }
 
-let ore = diff(start1,stop1) + diff(start2,stop2)
+function updateTotalGeneral() {
+    let oreElemente = document.querySelectorAll('[id^="ore_"]');
+    let plataElemente = document.querySelectorAll('[id^="plata_"]');
+    
+    let totalOre = 0;
+    let totalPlata = 0;
 
-document.getElementById("ore_"+id).innerHTML = ore.toFixed(2)
+    oreElemente.forEach(el => totalOre += parseFloat(el.innerText) || 0);
+    plataElemente.forEach(el => totalPlata += parseFloat(el.innerText) || 0);
 
-let plata = ore * tarif
-
-document.getElementById("plata_"+id).innerHTML = plata.toFixed(2)
-
-calcTotal()
-
+    // Actualizăm cardurile de sumar de la finalul paginii
+    if(document.getElementById("totalOreZi")) {
+        document.getElementById("totalOreZi").innerText = totalOre.toFixed(2) + " h";
+    }
+    if(document.getElementById("totalPlataZi")) {
+        document.getElementById("totalPlataZi").innerText = totalPlata.toFixed(2) + " lei";
+    }
 }
-
-function calcTotal(){
-
-let totalOre = 0
-let totalPlata = 0
-
-document.querySelectorAll("[id^='ore_']").forEach(el=>{
-totalOre += parseFloat(el.innerHTML || 0)
-})
-
-document.querySelectorAll("[id^='plata_']").forEach(el=>{
-totalPlata += parseFloat(el.innerHTML || 0)
-})
-
-document.getElementById("totalOreZi").innerHTML = totalOre.toFixed(2)
-document.getElementById("totalPlataZi").innerHTML = totalPlata.toFixed(2)
-
-}
-
 </script>
-
-{% endblock %}

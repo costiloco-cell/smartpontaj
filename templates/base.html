@@ -75,21 +75,26 @@
 </head>
 <body>
 
-    <div class="sidebar">
-        <h4 class="text-white text-center mb-4">SmartPontaj</h4>
-        <a href="/dashboard">📊 Dashboard</a>
-        <a href="/pontaj">📝 Pontaj</a>
-        {% if current_user.role == "admin" %}
-            <a href="/muncitori">👥 Muncitori</a>
-            <a href="/admin">⚙️ Admin</a>
-        {% endif %}
+    <<div class="sidebar">
+    <h4 class="text-white text-center mb-4">SmartPontaj</h4>
+    <a href="/dashboard">📊 Dashboard</a>
+    <a href="/pontaj">📝 Pontaj</a>
+    
+    <a href="/raport_lunar">📋 Raport</a>
+    <a href="/fluturas">💰 Fluturaș</a>
+
+    {% if current_user.role == "admin" %}
         <hr class="text-white mx-3">
-        <a href="/logout" class="text-danger">Logout</a>
-    </div>
+        <a href="/muncitori">👥 Muncitori</a>
+        <a href="/admin">⚙️ Admin</a>
+    {% endif %}
+    ...
+</div>
 
     <div class="mobile-nav">
         <a href="/dashboard"><div>📊</div>Dashboard</a>
         <a href="/pontaj"><div>📝</div>Pontaj</a>
+	<a href="/fluturas"><div>💰</div>Fluturaș</a>
         <a href="/raport_lunar"><div>📋</div>Raport</a>
         <a href="/logout"><div>🚪</div>Exit</a>
     </div>
