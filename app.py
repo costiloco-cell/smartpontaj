@@ -469,32 +469,23 @@ def delete_muncitor(id):
 # =====================================================
 
 @app.route("/raport_lunar")
-@role_required("admin","manager")
+@login_required
 def raport_lunar():
-
     luna = request.args.get("luna")
-
     if not luna:
         luna = datetime.now().strftime("%Y-%m")
 
-    rezultate = db.session.query(
-        Muncitor.nume,
-        db.func.sum(Pontaj.ore),
-        db.func.sum(Pontaj.plata)
-    ).join(
-        Pontaj, Pontaj.muncitor_id == Muncitor.id
-    ).filter(
-        Pontaj.data.like(f"{luna}%")
-    ).group_by(
-        Muncitor.nume
-    ).all()
+    # Folosim .label() pentru a ne asigura că numele coincid cu cele din HTML
+    rapoarte = db.session.query(
+        Muncitor.nume.label('nume'),
+        db.func.sum(Pontaj.ore).label('ore'),
+        db.func.sum(Pontaj.plata).label('total'),
+        Muncitor.id.label('id')
+    ).join(Pontaj, Pontaj.muncitor_id == Muncitor.id)\
+     .filter(Pontaj.data.like(f"{luna}%"))\
+     .group_by(Muncitor.id).all()
 
-    return render_template(
-        "raport_lunar.html",
-        rezultate=rezultate,
-        luna=luna
-    )
-
+    return render_template("raport_lunar.html", rapoarte=rapoarte, luna=luna)
 
 # =====================================================
 # EXPORT EXCEL
@@ -536,35 +527,24 @@ def export_lunar():
 # FLUTURAS SALARIU
 # =====================================================
 
-@app.route("/fluturas")
-@role_required("admin","manager")
-def fluturas():
+@app.route("/fluturas/<int:muncitor_id>") # Adăugăm ID în URL pentru a ști al cui fluturaș este
+@login_required
+def fluturas_detaliat(muncitor_id):
+    luna = request.args.get("luna", datetime.now().strftime("%Y-%m"))
+    muncitor = Muncitor.query.get_or_404(muncitor_id)
 
-    luna = request.args.get("luna")
-
-    if not luna:
-        luna = datetime.now().strftime("%Y-%m")
-
-    muncitori = Muncitor.query.all()
-
-    rezultate = db.session.query(
-        Muncitor.nume,
+    # Calculăm sumele doar pentru acest muncitor
+    date_f = db.session.query(
         db.func.sum(Pontaj.ore),
         db.func.sum(Pontaj.plata)
-    ).join(
-        Pontaj, Pontaj.muncitor_id == Muncitor.id
-    ).filter(
-        Pontaj.data.like(f"{luna}%")
-    ).group_by(
-        Muncitor.nume
-    ).all()
+    ).filter(Pontaj.muncitor_id == muncitor_id, Pontaj.data.like(f"{luna}%")).first()
 
-    return render_template(
-        "fluturas.html",
-        rezultate=rezultate,
-        luna=luna,
-        muncitori=muncitori
-    )
+    return render_template("fluturas.html", 
+                           nume_muncitor=muncitor.nume,
+                           total_ore=round(date_f[0] or 0, 2),
+                           total_plata=round(date_f[1] or 0, 2),
+                           tarif=muncitor.tarif_ora,
+                           luna=luna)
 
 # =====================================================
 # RUN
